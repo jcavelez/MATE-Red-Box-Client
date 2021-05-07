@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="../assets/styles/reset.css">
+    <meta name="xel-theme" content="../node_modules/xel/themes/cupertino.css">
+    <meta name="xel-accent-color" content="rgba(13, 71, 159, 1)">
+    <meta name="xel-size" content="large">
+    <meta name="xel-iconset" content="../node_modules/xel/iconsets/material-outlined.svg">
+    <link href="../node_modules/xel-fonts/fonts.css" rel="stylesheet"></link>
+    <link rel="stylesheet" href="../assets/styles/main.css">
+    <title>Massive Audio Transcoder Decoder</title>
+    <script src="../node_modules/xel/xel.js" type="module"></script>
+</head>
+<body>
+    <header>
+        <img class="header-logo" src="../assets/img/logo.PNG" alt="">
+        <x-icon class="header-menu" name="menu" iconset="..//node_modules/xel/iconsets/material-outlined.svg" style="width: 50px; height: 50px;"></x-icon>
+    </header>
+
+    <main>
+        <section class="status">
+            <x-label class="status-connection">Conectado a 172.20.47.11</x-label>
+        </section>
+
+        <section class="download-section">
+            <x-label class="download-section-label">Ruta de descarga</x-label>
+            <x-box class="download-section-inputs">
+                <x-input></x-input>
+                <x-button class="download-section-button">
+                    <x-icon name="folder"></x-icon>
+                  </x-button>
+            </x-box>
+        </section>
+
+        <section class="filters">
+            <x-card class="filter">
+                <x-box class="filter-top">
+                    <x-label class="filter-name">Fecha inicial</x-label>
+                    <x-switch toggled disabled></x-switch>
+                </x-box>
+                <x-box class="filter-botton">
+                    <x-input type="date" name="" id=""></x-input>
+                    <x-input type="time" name="" id=""></x-input>
+                </x-box>
+            </x-card>
+            <x-card class="filter">
+                <x-box class="filter-top">
+                    <x-label class="filter-name">Fecha Final</x-label>
+                    <x-switch id=""></x-switch>
+                </x-box>
+                <x-box class="filter-botton">
+                    <x-input type="date" name="" id=""></x-input>
+                    <x-input type="time" name="" id=""></x-input>
+                </x-box>
+            </x-card>
+            <x-card class="filter">
+                <x-box class="filter-top">
+                    <x-label class="filter-name">Extension</x-label>
+                    <x-switch ></x-switch>
+                </x-box>
+                <x-box class="filter-botton">
+                    <x-input type="text" name="" id=""></x-input>
+                </x-box>
+            </x-card>
+            <x-card class="filter">
+                <x-box class="filter-top">
+                    <x-label class="filter-name">Nombre de Canal</x-label>
+                    <x-switch ></x-switch>
+                </x-box>
+                <x-box class="filter-botton">
+                    <x-input type="text" name="" id=""></x-input>
+                </x-box>
+            </x-card>
+        </section>
+
+        <div class="buttons">
+            <x-button class="buttons-download">Descargar</x-button>
+        </div>
+
+    </main>
+
+    <footer>
+        <x-progressbar value="1" max="100"></x-progressbar>
+    </footer>
+
+</body>
+</html>
