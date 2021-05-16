@@ -27,7 +27,7 @@
                     <x-label>Opciones de Exportacion</x-label> 
                 </x-menuitem>
                 <hr>
-                <x-menuitem class="menu-item">
+                <x-menuitem class="menu-item" id="exit-button">
                     <x-icon name="exit"></x-icon>
                     <x-label>Salir</x-label> 
                 </x-menuitem>
@@ -43,56 +43,56 @@
         <section class="download-section">
             <x-label class="download-section-label">Ruta de descarga</x-label>
             <x-box class="download-section-inputs">
-                <x-input></x-input>
-                <x-button class="download-section-button">
+                <x-input id="download-section-input"></x-input>
+                <x-button class="download-section-button" id="open-directory">
                     <x-icon name="folder"></x-icon>
                   </x-button>
             </x-box>
         </section>
 
         <section class="filters">
-            <x-card class="filter">
+            <x-card class="filter" data-field="start-date">
                 <x-box class="filter-top">
                     <x-label class="filter-name">Fecha inicial</x-label>
                     <x-switch toggled disabled></x-switch>
                 </x-box>
                 <x-box class="filter-botton">
-                    <x-input type="date" name="" id=""></x-input>
-                    <x-input type="time" name="" id=""></x-input>
+                    <x-input type="date" name="" id="" ></x-input>
+                    <x-input type="time" name="" id="" ></x-input>
                 </x-box>
             </x-card>
-            <x-card class="filter">
+            <x-card class="filter" data-field="end-date" disabled>
                 <x-box class="filter-top">
-                    <x-label class="filter-name">Fecha Final</x-label>
-                    <x-switch id=""></x-switch>
+                    <x-label class="filter-name" disabled>Fecha Final</x-label>
+                    <x-switch id="switch-end-date"></x-switch>
                 </x-box>
                 <x-box class="filter-botton">
-                    <x-input type="date" name="" id=""></x-input>
-                    <x-input type="time" name="" id=""></x-input>
+                    <x-input type="date" name="" id="" disabled></x-input>
+                    <x-input type="time" name="" id="" disabled></x-input>
                 </x-box>
             </x-card>
-            <x-card class="filter">
-                <x-box class="filter-top">
-                    <x-label class="filter-name">Extension</x-label>
-                    <x-switch ></x-switch>
+            <x-card class="filter" disabled>
+                <x-box class="filter-top" disabled>
+                    <x-label class="filter-name" disabled>Extension</x-label>
+                    <x-switch id="switch-extension" ></x-switch>
                 </x-box>
-                <x-box class="filter-botton">
-                    <x-input type="text" name="" id=""></x-input>
+                <x-box class="filter-botton" disabled>
+                    <x-input type="text" name="" id="" disabled></x-input>
                 </x-box>
             </x-card>
-            <x-card class="filter">
-                <x-box class="filter-top">
-                    <x-label class="filter-name">Nombre de Canal</x-label>
-                    <x-switch ></x-switch>
+            <x-card class="filter" disabled>
+                <x-box class="filter-top" disabled>
+                    <x-label class="filter-name" disabled>Nombre de Canal</x-label>
+                    <x-switch id="switch-channel-name" ></x-switch>
                 </x-box>
-                <x-box class="filter-botton">
-                    <x-input type="text" name="" id=""></x-input>
+                <x-box class="filter-botton" disabled>
+                    <x-input type="text" name="" id="" disabled></x-input>
                 </x-box>
             </x-card>
         </section>
 
         <div class="buttons">
-            <x-button class="buttons-download">Descargar</x-button>
+            <x-button class="buttons-download" id="download-button">Descargar</x-button>
         </div>
 
     </main>
@@ -100,6 +100,7 @@
     <footer>
         <x-progressbar value="1" max="100"></x-progressbar>
     </footer>
+    <script src="frontend.js" type="module"></script>
 
 </body>
 </html>
