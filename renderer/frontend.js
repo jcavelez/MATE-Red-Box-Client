@@ -10,6 +10,7 @@ const switchChannelName = document.getElementById("switch-channel-name")
 
 
 window.addEventListener('load', addEvents)
+document.getElementById('download-section-input').value = 'C:\\Users\\jcave\\OneDrive\\Escritorio\\Descargas-Red-Box'
 
 function addEvents() {
     switchEndDate.addEventListener('toggle', toggleBox)
