@@ -11,7 +11,7 @@ function openDir() {
 function requestStartDownload() {
     console.log('enviando senal descarga descarga')
     let downloadOptions = {
-        resultsToSkip: '0',
+        resultsToSkip: 0,
         searchMode: "LatestFirst",
         startTime: '20210512000000',
         endTime: '20291231235959',
