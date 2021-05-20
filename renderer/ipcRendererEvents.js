@@ -13,8 +13,8 @@ function requestStartDownload() {
     let downloadOptions = {
         resultsToSkip: 0,
         searchMode: "LatestFirst",
-        startTime: '20210512000000',
-        endTime: '20291231235959',
+        startTime: '20210518000000',
+        endTime: '20210518235959',
         extension:'',
         channelName: '',
         outputFormat: '.wav',
