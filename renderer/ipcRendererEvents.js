@@ -14,7 +14,7 @@ function requestStartDownload() {
         resultsToSkip: 0,
         searchMode: "LatestFirst",
         startTime: '20210518000000',
-        endTime: '20210518235959',
+        endTime: '20210518085959',
         extension:'',
         channelName: '',
         outputFormat: '.wav',

@@ -33,7 +33,7 @@ async function logoutRecorder(token) {
                                     {
                                         'authToken': token
                                     })
-    return dataFetched.authToken
+    console.log(dataFetched)
 }
 
 
@@ -49,7 +49,12 @@ async function placeNewSearch(downloadOptions) {
             'searchMode': downloadOptions.searchMode,
             'startTime': downloadOptions.startTime,
             'endTime': downloadOptions.endTime
+        }).then((res, rej) => {
+            console.log('search url')
+            console.log(res)
+            console.log(rej)
         })
+    
 
     let searchStatus = { 
         statusShort: 'Requested'
@@ -133,7 +138,6 @@ async function startDownload(downloadOptions) {
 
     let searchResults =[]
     downloadOptions.token = await loginRecorder()
-    //test(downloadOptions.token)
     downloadOptions.status = 'incomplete'
     downloadOptions.progress = 0
     downloadOptions.numberOfResults = await placeNewSearch(downloadOptions)
@@ -153,17 +157,21 @@ async function startDownload(downloadOptions) {
     console.log(` total ids obtenidos ${searchResults.length}`)
     
     for (let record of searchResults) {
-        let status = await downloadAudio(downloadOptions.token, record.callID, downloadOptions.downloadPath )
-        record.status = status
+        await downloadAudio(downloadOptions.token, record.callID, downloadOptions.downloadPath )
+            .then(res => record.status = res)
+        
         
         await sleep(2000)
     }
 
-    await logoutRecorder(token)
+    console.log(searchResults)
+
+    await logoutRecorder(downloadOptions.token)
         .then(res => {
             console.log(res)
             console.log('logout')
         })
+    console.log('EOP')
 }
 
 async function fetchData(method, url, headers, data={}) {
