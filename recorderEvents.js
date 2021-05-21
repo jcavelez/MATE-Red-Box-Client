@@ -122,15 +122,16 @@ async function downloadAudio(token, callID, savePath) {
                     console.log('error escribiendo archivo')
                     console.error(error)
                 }
-                else {
-                    return 'OK'
-                }
             })
+            return 'OK'
         })
         .catch((err) => {
             console.log('error fetch')
             console.log(err)
         })
+
+        console.log(`response: ${response}`)
+        return response
 }
 
 //TODO: Write IDs in a DB

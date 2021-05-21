@@ -13,7 +13,7 @@ function requestStartDownload() {
     let downloadOptions = {
         resultsToSkip: 0,
         searchMode: "LatestFirst",
-        startTime: '20210518000000',
+        startTime: '20210518080000',
         endTime: '20210518085959',
         extension:'',
         channelName: '',
