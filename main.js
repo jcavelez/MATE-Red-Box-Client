@@ -1,5 +1,6 @@
 'use strict'
 
+const { settings } = require('cluster')
 const { 
   app, 
   BrowserWindow, 
@@ -74,6 +75,26 @@ ipcMain.on('openDir', (event) => {
 ipcMain.on('startDownload', (event, downloadOptions) => {
   const startDownload = require('./recorderEvents.js')
   startDownload(downloadOptions)
+})
+
+ipcMain.on('openExportOptions', (event) => {
+  console.log('recibido en main')
+  const exportOptionsWindow = new BrowserWindow({
+    width: 530,
+    height: 540,
+    title: 'Preferencias',
+    center: true,
+    modal: true,
+    frame: false,
+    show: false
+  })
+  console.log(`file://${path.join(__dirname,'..')}/export-settings.html`)
+  exportOptionsWindow.loadURL(`file://${path.join(__dirname,'..')}/export-settings.html`)
+
+  exportOptionsWindow.once('ready-to-show', () => {
+    exportOptionsWindow.show()
+    exportOptionsWindow.focus()
+  })
 })
 
 

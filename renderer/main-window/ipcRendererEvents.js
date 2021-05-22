@@ -13,8 +13,8 @@ function requestStartDownload() {
     let downloadOptions = {
         resultsToSkip: 0,
         searchMode: "LatestFirst",
-        startTime: '20210518080000',
-        endTime: '20210518085959',
+        startTime: '20210521080000',
+        endTime: '20210521235959',
         extension:'',
         channelName: '',
         outputFormat: '.wav',
@@ -23,8 +23,13 @@ function requestStartDownload() {
     window.api.send('startDownload', downloadOptions) 
 }
 
+function openSearchPreferences() {
+    console.log('abrir ventana de opciones de descarga')
+    window.api.send('openExportOptions')
+}
+
 window.api.receive('recievePath', (data) => {
     document.getElementById('download-section-input').value = data
 })
 
-export { openDir, requestStartDownload } 
+export { openDir, requestStartDownload, openSearchPreferences } 

@@ -1,7 +1,8 @@
-import { openDir, requestStartDownload } from './ipcRendererEvents.js'
+import { openDir, requestStartDownload, openSearchPreferences } from './ipcRendererEvents.js'
 
 const openDirectoryBtn = document.getElementById('open-directory')
 const downloadBtn = document.getElementById('download-button')
+const exportSettingsBtn = document.getElementById('export-settings-btn')
 const exitBtn = document.getElementById('exit-button')
 
 const switchEndDate = document.getElementById("switch-end-date")
@@ -17,8 +18,10 @@ function addEvents() {
     switchChannelName.addEventListener('toggle', toggleBox)
     switchExtension.addEventListener('toggle', toggleBox)
     openDirectoryBtn.addEventListener('click', openDir)
-    exitBtn.addEventListener('click', exit)
+    exportSettingsBtn.addEventListener('click', openSearchPreferences)
     downloadBtn.addEventListener('click', requestStartDownload)
+    exitBtn.addEventListener('click', exit)
+
 }
 
 function toggleBox(ev) {
