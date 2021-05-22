@@ -13,6 +13,18 @@
   --border-radius: 10px
 
 }
+
+dialog {
+    width: 250px;
+    height: 175px;
+    top: 70px !important;
+    left: auto;
+    right: 0;
+    border-radius: 15px 0 0 15px !important;
+    border: 5px solid #326960;
+    padding: 10px 20px; 
+}
+
 x-input {
     border-radius: var(--border-radius);
     max-width: 99%;
@@ -47,17 +59,9 @@ header {
 
 .header-menu {
     margin: 20px;
-    width: 50px;
     height: 50px;
     position: relative;
-}
-
-.menu-box {
-    display: none;
-    height: fit-content;
-    position: absolute;
-    top: 50px;
-    margin: 0px 0px 0px -180px;
+    border: none;
 }
 
 .header-menu x-icon[name="menu"] {    
@@ -66,9 +70,10 @@ header {
     height: 45px;
 }
 
-.header-menu:hover .menu-box, .menu-box:hover {
-    display: flex;
+.menu-item:hover {
+    background-color: rgba(0, 0, 0, 0.10);
 }
+
 
 .status {
     width: 100%;

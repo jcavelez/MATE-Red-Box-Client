@@ -83,13 +83,13 @@ ipcMain.on('openExportOptions', (event) => {
     width: 530,
     height: 540,
     title: 'Preferencias',
-    center: true,
+    //center: true,
     modal: true,
-    frame: false,
-    show: false
+    frame: true,
+    show: true
   })
-  console.log(`file://${path.join(__dirname,'..')}/export-settings.html`)
-  exportOptionsWindow.loadURL(`file://${path.join(__dirname,'..')}/export-settings.html`)
+  console.log(`${path.join(__dirname, './renderer/export-settings.html')}`)
+  exportOptionsWindow.loadURL(`${path.join(__dirname, './renderer/export-settings.html')}`)
 
   exportOptionsWindow.once('ready-to-show', () => {
     exportOptionsWindow.show()

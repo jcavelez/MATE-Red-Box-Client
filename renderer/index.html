@@ -15,24 +15,30 @@
 <body>
     <header>
         <img class="header-logo" src="../assets/img/logo.PNG" alt="">
-        <div class="header-menu">
+        <x-button class="header-menu">
             <x-icon class="menu-icon" name="menu" iconset="..//node_modules/xel/iconsets/material-outlined.svg" ></x-icon>
-            <x-menu class="menu-box" opened>
-                <x-menuitem class="menu-item">
-                    <x-icon name="search" id="query-options"></x-icon>
-                    <x-label>Opciones de Busqueda</x-label> 
-                </x-menuitem>
-                <x-menuitem class="menu-item" id='export-settings-btn'>
-                    <x-icon name="tune" id="export-options"></x-icon>
-                    <x-label>Opciones de Exportacion</x-label> 
-                </x-menuitem>
-                <hr>
-                <x-menuitem class="menu-item" id="exit-button">
-                    <x-icon name="exit"></x-icon>
-                    <x-label>Salir</x-label> 
-                </x-menuitem>
-            </x-menu>
-        </div>
+            <dialog >
+                <x-buttons vertical tracking="-1" class="menu">
+                    <x-button class="menu-item" skin="nav" id="query-options-btn">
+                        <x-icon name="person"></x-icon>
+                        <x-label>Opciones de usuario</x-label>
+                    </x-button>
+                    <x-button class="menu-item" skin="nav" id="search-options-btn">
+                        <x-icon name="search"></x-icon>
+                        <x-label>Opciones de busqueda</x-label>
+                    </x-button>
+                    <x-button class="menu-item" skin="nav" id="export-settings-btn">
+                        <x-icon name="tune"></x-icon>
+                        <x-label>Opciones de descarga</x-label>
+                    </x-button>
+                    <hr>
+                    <x-button class="menu-item" skin="nav" id="exit-button">
+                        <x-icon name="logout"></x-icon>
+                        <x-label>Salir</x-label>
+                    </x-button>
+                </x-buttons>
+            </dialog>
+        </x-button>
     </header>
 
     <main>
