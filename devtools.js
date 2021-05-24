@@ -2,7 +2,7 @@ const reload = require('electron-reload')
 const debug = require('electron-debug')
 
 function run_dev_tools() {
-    console.log("dev")
+    console.log("development")
     reload(__dirname)
     debug()
 }

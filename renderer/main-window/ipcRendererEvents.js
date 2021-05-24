@@ -1,8 +1,3 @@
-//import { ipcRenderer } from 'electron'
-//const { ipcRenderer } = require("electron")
-//const electron = window.require('electron')
-//const ipcRenderer = electron.ipcRenderer
-
 function openDir() {
     window.api.send('openDir')
     console.log('enviado')
@@ -28,8 +23,8 @@ function openSearchPreferences() {
     window.api.send('openExportOptions')
 }
 
-window.api.receive('recievePath', (data) => {
-    document.getElementById('download-section-input').value = data
-})
+// window.api.receive('recievePath', (data) => {
+//     document.getElementById('download-section-input').value = data
+// })
 
 export { openDir, requestStartDownload, openSearchPreferences } 

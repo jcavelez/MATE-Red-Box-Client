@@ -20,9 +20,9 @@ function createWindow () {
     width: 700,
     height: 750,
     webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      enableRemoteModule: false,
+      nodeIntegration: true,
+      contextIsolation: false,
+      enableRemoteModule: true,
       preload: path.join(__dirname, 'preload.js')
     },
     maximizable: false,
@@ -31,6 +31,7 @@ function createWindow () {
   })
 
   win.loadFile('./renderer/index.html')
+
 }
 
 app.whenReady().then(() => {
@@ -97,9 +98,5 @@ ipcMain.on('openExportOptions', (event) => {
   })
 })
 
-
-
-
-//********** */
 
 
