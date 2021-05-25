@@ -1,3 +1,7 @@
+function loadPreferences() {
+    window.api.send('loadPreferences')
+}
+
 function openDir() {
     window.api.send('openDir')
     console.log('enviado')
@@ -12,7 +16,7 @@ function requestStartDownload() {
         endTime: '20210521235959',
         extension:'',
         channelName: '',
-        outputFormat: '.wav',
+        outputFormat: 'wav',
         downloadPath: document.getElementById('download-section-input').value
     }
     window.api.send('startDownload', downloadOptions) 
@@ -23,8 +27,21 @@ function openSearchPreferences() {
     window.api.send('openExportOptions')
 }
 
-// window.api.receive('recievePath', (data) => {
-//     document.getElementById('download-section-input').value = data
-// })
+window.api.receive('recievePath', (data) => {
+    document.getElementById('download-section-input').value = data
+})
 
-export { openDir, requestStartDownload, openSearchPreferences } 
+window.api.receive('getPreferences', (prefs) => {
+
+    const replaceText = (selector, text) => {
+        const element = document.getElementById(selector)
+        if (element) element.innerText = text
+    }
+
+    replaceText('username', `[${prefs.username}]`)
+    replaceText('recorder', prefs.lastRecorderIP)
+
+    document.getElementById('download-section-input').value = prefs.downloadDirectory
+})
+
+export { openDir, loadPreferences, requestStartDownload, openSearchPreferences } 

@@ -1,4 +1,4 @@
-import { openDir, requestStartDownload, openSearchPreferences } from './ipcRendererEvents.js'
+import { loadPreferences, openDir, requestStartDownload, openSearchPreferences } from './ipcRendererEvents.js'
 
 const openDirectoryBtn = document.getElementById('open-directory')
 const downloadBtn = document.getElementById('download-button')
@@ -11,7 +11,7 @@ const switchChannelName = document.getElementById("switch-channel-name")
 
 
 window.addEventListener('load', addEvents)
-document.getElementById('download-section-input').value = 'C:\\Users\\jcave\\OneDrive\\Escritorio\\Descargas-Red-Box'
+window.addEventListener('load', loadPreferences)
 
 function addEvents() {
     switchEndDate.addEventListener('toggle', toggleBox)
@@ -21,7 +21,6 @@ function addEvents() {
     exportSettingsBtn.addEventListener('click', openSearchPreferences)
     downloadBtn.addEventListener('click', requestStartDownload)
     exitBtn.addEventListener('click', exit)
-
 }
 
 function toggleBox(ev) {

@@ -1,6 +1,6 @@
 'use strict'
 
-const { settings } = require('cluster')
+const settings = require('electron-settings')
 const { 
   app, 
   BrowserWindow, 
@@ -21,7 +21,7 @@ function createWindow () {
     height: 750,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false,
+      contextIsolation: true,
       enableRemoteModule: true,
       preload: path.join(__dirname, 'preload.js')
     },
@@ -67,10 +67,38 @@ ipcMain.on('openDir', (event) => {
   ).then((res)=>{
     if(res.canceled === false) {
       console.log(res)
+      settings.setSync('downloadDirectory', res.filePaths[0])
       event.sender.send('recievePath', res.filePaths[0])
 
     }
   }).catch(err => console.log('Handle Error',err))
+})
+
+ipcMain.on('loadPreferences', (event) => {
+  console.log('DOM content loaded')
+    
+    const checkNewSettings = (key, value) => {
+        if (!settings.hasSync(key)) {
+            settings.setSync(key,value)
+        }
+    }
+
+    checkNewSettings('username', 'admin')
+    checkNewSettings('password', 'recorder')
+    checkNewSettings('lastRecorderIP', '192.168.221.128')
+    checkNewSettings('resultsToSkip', 0)
+    checkNewSettings('searchMode', 'LatestFirst')
+    checkNewSettings('startTime', '20210521080000')
+    checkNewSettings('endTime', '20301231235959')
+    checkNewSettings('outputFormat', 'mp3')
+    checkNewSettings('downloadDirectory', '')
+
+    console.log(settings.file())
+    console.log(settings.getSync())
+
+    event.sender.send('getPreferences', settings.getSync())
+
+    
 })
 
 ipcMain.on('startDownload', (event, downloadOptions) => {
