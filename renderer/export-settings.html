@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="xel-theme" content="../node_modules/xel/themes/cupertino.css">
     <meta name="xel-accent-color" content="rgba(13, 71, 159, 1)">
-    <meta name="xel-size" content="large">
+    <meta name="xel-size" content="small">
     <meta name="xel-iconset" content="../node_modules/xel/iconsets/material-outlined.svg">
     <link href="../node_modules/xel-fonts/fonts.css" rel="stylesheet"></link>
     <link rel="stylesheet" href="../assets/styles/preferences.css">
@@ -20,22 +20,22 @@
     </header>
     <main>
         <div class="options">
-            <x-box class="options-format">
+            <x-box class="options-item">
                 <x-label>Formato de descarga:</x-label>
-                <x-select>
-                    <x-menu>
-                        <x-menuitem value="wav" toggled>
+                <x-select disabled>
+                    <x-menu >
+                        <x-menuitem value="wav">
                             <x-label>WAV</x-label>
                         </x-menuitem>
-                        <x-menuitem value="mp3">
+                        <x-menuitem value="mp3" toggled>
                             <x-label>MP3</x-label>
                         </x-menuitem>
                     </x-menu>
                 </x-select>
             </x-box>
-            <x-box class="options-overwrite">
+            <x-box class="options-item">
                 <x-label>Sobreescribir archivos:</x-label>
-                <x-select>
+                <x-select disabled>
                     <x-menu>
                         <x-menuitem value="si" toggled>
                             <x-label>Si</x-label>
@@ -46,9 +46,9 @@
                     </x-menu>
                 </x-select>
             </x-box>
-            <x-box class="options-summary">
+            <x-box class="options-item">
                 <x-label>Generar informe:</x-label>
-                <x-select>
+                <x-select disabled>
                     <x-menu>
                         <x-menuitem value="si" toggled>
                             <x-label>Si</x-label>
@@ -58,52 +58,52 @@
                         </x-menuitem>
                     </x-menu>
                 </x-select>
-            </x-box>
-
-            <hr>
-
-            <x-box class="filename">
-                <x-box class="filename-label">
-                    <x-label>Nombre de archivo:</x-label>
-                </x-box>
-                <x-box class="filename-column">
-                    <x-box class="filename-field">
-                        <x-checkbox class="filename-check"></x-checkbox>
-                        <x-label class="filename-fieldname">ID Llamada</x-label>
-                    </x-box>
-                    <x-box class="filename-field">
-                        <x-checkbox class="filename-check"></x-checkbox>
-                        <x-label class="filename-fieldname">Hora inicio</x-label>
-                    </x-box>
-                    <x-box class="filename-field">
-                        <x-checkbox class="filename-check"></x-checkbox>
-                        <x-label class="filename-fieldname">Hora fin</x-label>
-                    </x-box>
-                </x-box>
-                <x-box class="filename-column">
-                    <x-box class="filename-field">
-                        <x-checkbox class="filename-check"></x-checkbox>
-                        <x-label class="filename-fieldname">Extension</x-label>
-                    </x-box>
-                    <x-box class="filename-field">
-                        <x-checkbox class="filename-check"></x-checkbox>
-                        <x-label class="filename-fieldname">Nombre de canal</x-label>
-                    </x-box>
-                    <x-box class="filename-field">
-                        <x-checkbox class="filename-check"></x-checkbox>
-                        <x-label class="filename-fieldname">Otro usuario</x-label>
-                    </x-box>
-                    <x-box class="filename-field">
-                        <x-checkbox class="filename-check"></x-checkbox>
-                        <x-label class="filename-fieldname">External call ID</x-label>
-                    </x-box>
-                </x-box>
             </x-box>
         </div>
+            <hr>
+
+        <x-box class="filename" disabled>
+            <x-box class="filename-label">
+                <x-label>Nombre de archivo:</x-label>
+            </x-box>
+            <x-box class="filename-column">
+                <x-box class="filename-field">
+                    <x-checkbox class="filename-check" toggled disabled></x-checkbox>
+                    <x-label class="filename-fieldname">ID Llamada</x-label>
+                </x-box>
+                <x-box class="filename-field">
+                    <x-checkbox class="filename-check" toggled disabled></x-checkbox>
+                    <x-label class="filename-fieldname">Hora inicio</x-label>
+                </x-box>
+                <x-box class="filename-field">
+                    <x-checkbox class="filename-check" toggled disabled></x-checkbox>
+                    <x-label class="filename-fieldname">Hora fin</x-label>
+                </x-box>
+            </x-box>
+            <x-box class="filename-column">
+                <x-box class="filename-field">
+                    <x-checkbox class="filename-check" toggled disabled></x-checkbox>
+                    <x-label class="filename-fieldname">Extension</x-label>
+                </x-box>
+                <x-box class="filename-field">
+                    <x-checkbox class="filename-check" toggled disabled></x-checkbox>
+                    <x-label class="filename-fieldname">Nombre de canal</x-label>
+                </x-box>
+                <x-box class="filename-field">
+                    <x-checkbox class="filename-check" toggled disabled></x-checkbox>
+                    <x-label class="filename-fieldname">Otro usuario</x-label>
+                </x-box>
+                <x-box class="filename-field">
+                    <x-checkbox class="filename-check" toggled disabled></x-checkbox>
+                    <x-label class="filename-fieldname">External call ID</x-label>
+                </x-box>
+            </x-box>
+        </x-box>
+        
 
         <x-box class="buttons">
-            <x-button>Guardar</x-button>
-            <x-button>Cancelar</x-button>
+            <x-button id="save">Guardar</x-button>
+            <x-button id="exit">Cancelar</x-button>
         </x-box>
 
 

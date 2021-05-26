@@ -1,22 +1,39 @@
 'use strict'
 
-const settings = require('electron-settings')
 const { 
   app, 
   BrowserWindow, 
   ipcMain 
 } = require('electron')
+const settings = require('electron-settings')
 const path = require('path')
 const devtools = require('./devtools')
+
+let win = null
+const gotTheLock = app.requestSingleInstanceLock()
 
 if (process.env.NODE_ENV === 'development') {
     devtools.run_dev_tools()
 }
 
-console.log(path.join(__dirname, 'preload.js'))
+if (!gotTheLock) {
+  app.quit()
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    if (win) {
+      if (win.isMinimized()) win.restore()
+      win.focus()
+    }
+  })
+
+  // Create myWindow, load the rest of the app, etc...
+  app.whenReady().then(() => {
+    createWindow()
+  })
+}
 
 function createWindow () {
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
     width: 700,
     height: 750,
     webPreferences: {
@@ -33,16 +50,6 @@ function createWindow () {
   win.loadFile('./renderer/index.html')
 
 }
-
-app.whenReady().then(() => {
-  createWindow()
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow()
-    }
-  })
-})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -93,17 +100,17 @@ ipcMain.on('loadPreferences', (event) => {
     checkNewSettings('outputFormat', 'mp3')
     checkNewSettings('downloadDirectory', '')
 
-    console.log(settings.file())
-    console.log(settings.getSync())
-
     event.sender.send('getPreferences', settings.getSync())
-
-    
 })
 
 ipcMain.on('startDownload', (event, downloadOptions) => {
   const startDownload = require('./recorderEvents.js')
-  startDownload(downloadOptions)
+
+  for (const property in downloadOptions) {
+    settings.setSync(property, downloadOptions[property])
+  }
+
+  startDownload(settings.getSync())
 })
 
 ipcMain.on('openExportOptions', (event) => {
@@ -125,6 +132,3 @@ ipcMain.on('openExportOptions', (event) => {
     exportOptionsWindow.focus()
   })
 })
-
-
-

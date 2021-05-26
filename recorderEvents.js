@@ -5,7 +5,7 @@ const sleep = require('./sleep.js')
 const fs = require('fs')
 const path = require('path')
 
-const SERVER_URL = 'http://192.168.221.128:1480'
+const SERVER_URL = 'http://<IP>:1480'
 const LOGIN_URL = '/api/v1/sessions/login'
 const LOGOUT_URL = '/api/v1/sessions/logout'
 const SEARCH_URL = '/api/v1/search'
@@ -17,19 +17,19 @@ const CALL_DETAILS_URL = '/api/v1/search/calldetails/<callID>'
 const SEARCH_STATUS_PENDING =['Requested', 'Initialization', 'Queued', 'SettingUp', 'Executing', 'ReadingResults']
 
 
-async function loginRecorder() {
+async function loginRecorder(IP, username, password) {
     let dataFetched = await fetchData('POST',
-                                    `${SERVER_URL}${LOGIN_URL}`,
+                                    `${SERVER_URL.replace('<IP>',IP)}${LOGIN_URL}`,
                                     {
-                                        'username': 'admin',
-                                        'password': 'recorder'
+                                        'username': username,
+                                        'password': password
                                     })
     return dataFetched.authToken
 }
 
-async function logoutRecorder(token) {
+async function logoutRecorder(IP, token) {
     let dataFetched = await fetchData('POST',
-                                    `${SERVER_URL}${LOGOUT_URL}`,
+                                    `${SERVER_URL.replace('<IP>',IP)}${LOGOUT_URL}`,
                                     {
                                         'authToken': token
                                     })
@@ -37,18 +37,18 @@ async function logoutRecorder(token) {
 }
 
 
-async function placeNewSearch(downloadOptions) {
+async function placeNewSearch(opt) {
     await fetchData('POST',
-        `${SERVER_URL}${SEARCH_URL}`,
+        `${SERVER_URL.replace('<IP>',opt.lastRecorderIP)}${SEARCH_URL}`,
         {
-            'authToken': downloadOptions.token,
+            'authToken': opt.token,
             'Content-Type': 'application/json'
         },
         {
-            'resultsToSkip': downloadOptions.resultsToSkip,
-            'searchMode': downloadOptions.searchMode,
-            'startTime': downloadOptions.startTime,
-            'endTime': downloadOptions.endTime
+            'resultsToSkip': opt.resultsToSkip,
+            'searchMode': opt.searchMode,
+            'startTime': opt.startTime,
+            'endTime': opt.endTime
         }).then((res, rej) => {
             console.log('search url')
             console.log(res)
@@ -61,12 +61,13 @@ async function placeNewSearch(downloadOptions) {
     }
 
     while(SEARCH_STATUS_PENDING.includes(searchStatus.statusShort)) {
-        searchStatus = await fetchData('GET',
-                                        `${SERVER_URL}${SEARCH_STATUS_URL}`,
-                                        {
-                                            'authToken': downloadOptions.token,
-                                            'Content-Type': 'application/json'
-                                        })
+        searchStatus = await fetchData(
+            'GET',
+             `${SERVER_URL.replace('<IP>',opt.lastRecorderIP)}${SEARCH_STATUS_URL}`,
+             {
+                 'authToken': opt.token,
+                 'Content-Type': 'application/json'
+             })
         // Waiting ~2 second between requests
         await sleep(2000)
     } 
@@ -78,9 +79,9 @@ async function placeNewSearch(downloadOptions) {
     }
 }
 
-async function getResults(token) {
+async function getResults(IP, token) {
     let dataFetched = await fetchData('GET',
-                                        `${SERVER_URL}${SEARCH_RESULTS_URL}`,
+                                        `${SERVER_URL.replace('<IP>',IP)}${SEARCH_RESULTS_URL}`,
                                         {
                                             'authToken': token,
                                             'Content-Type': 'application/json'
@@ -89,7 +90,7 @@ async function getResults(token) {
 }
 
 
-async function downloadAudio(token, callID, savePath) {
+async function downloadAudio(IP, token, callID, savePath) {
     let options = {
         method: 'GET',
         headers: {
@@ -99,7 +100,7 @@ async function downloadAudio(token, callID, savePath) {
 
     console.log(`callID: ${callID}`)
 
-    let response = await fetch(`${SERVER_URL}${CALL_AUDIO_URL.replace('<callID>', callID)}`, options)
+    let response = await fetch(`${SERVER_URL.replace('<IP>', IP)}${CALL_AUDIO_URL.replace('<callID>', callID)}`, options)
         .then((res) => {
             if(res.status === 200) {
                 console.log("200 OK")
@@ -111,11 +112,11 @@ async function downloadAudio(token, callID, savePath) {
         })
         .then((res) => {
             if(res.error) {
-                console.log('erro segundo then')
                 console.log(res.error)
                 return res.error
             }
             console.log(res)
+            
             let buffer = Buffer.from(res.wavFile)
             fs.writeFile(path.join(savePath, `${callID}.wav`),buffer, (error) => {
                 if (error) {
@@ -123,6 +124,7 @@ async function downloadAudio(token, callID, savePath) {
                     console.error(error)
                 }
             })
+
             return 'OK'
         })
         .catch((err) => {
@@ -130,21 +132,58 @@ async function downloadAudio(token, callID, savePath) {
             console.log(err)
         })
 
-        console.log(`response: ${response}`)
-        return response
+        let det = await fetch(`${SERVER_URL.replace('<IP>', IP)}${CALL_DETAILS_URL.replace('<callID>', callID)}`, options)
+        .then((res) => {
+            if(res.status === 200) {
+                console.log("200 OK")
+                return res.json()
+            } else {
+                console.log('---- respuesta no satisfactoria')
+                console.log(res.status)
+            }
+        })
+        .then((res) => {
+            if(res.error) {
+                console.log(res.error)
+                return res.error
+            }
+            return res.fields
+            
+        })
+        .catch((err) => {
+            console.log('error fetch')
+            console.log(err)
+        })
+
+        let callDetails = {
+            status: response
+        }
+        
+        det.forEach(field => {
+            callDetails[field.Key] = field.Value
+        });
+        
+
+        return callDetails
 }
 
 //TODO: Write IDs in a DB
 async function startDownload(downloadOptions) {
 
     let searchResults =[]
-    downloadOptions.token = await loginRecorder()
+    downloadOptions.token = await loginRecorder(
+        downloadOptions.lastRecorderIP,
+        downloadOptions.username,
+        downloadOptions.password)
     downloadOptions.status = 'incomplete'
     downloadOptions.progress = 0
     downloadOptions.numberOfResults = await placeNewSearch(downloadOptions)
 
     while (downloadOptions.status === 'incomplete') {
-        const newSearch = await getResults(downloadOptions.token)
+        const newSearch = await getResults(
+            downloadOptions.lastRecorderIP,
+            downloadOptions.token
+            )
         console.log(newSearch)
         Array.prototype.push.apply(searchResults, newSearch)
         downloadOptions.progress = searchResults.length
@@ -157,17 +196,25 @@ async function startDownload(downloadOptions) {
     }
     console.log(` total ids obtenidos ${searchResults.length}`)
     
-    for (let record of searchResults) {
-        await downloadAudio(downloadOptions.token, record.callID, downloadOptions.downloadPath )
-            .then(res => record.status = res)
+    for (let i = 0; i < searchResults.length; i++) {
+        await downloadAudio(
+            downloadOptions.lastRecorderIP,
+            downloadOptions.token,
+            searchResults[i].callID,
+            downloadOptions.downloadPath
+            )
+            .then((res) => {
+                searchResults[i] = {...searchResults[i], ...res}
+            })
+
+            console.log(searchResults[i])
         
-        
-        await sleep(2000)
+        await sleep(1000)
     }
 
     console.log(searchResults)
 
-    await logoutRecorder(downloadOptions.token)
+    await logoutRecorder(downloadOptions.lastRecorderIP,downloadOptions.token)
         .then(res => {
             console.log(res)
             console.log('logout')
@@ -200,8 +247,6 @@ async function fetchData(method, url, headers, data={}) {
 
     if(response.status === 200) {
         let results = await response.json()
-        //console.log(response.headers)
-       // console.log(response)
        
         return results   
     } else {

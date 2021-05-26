@@ -25,14 +25,14 @@ dialog {
     padding: 10px 20px; 
 }
 
-x-input {
+x-input, input {
     border-radius: var(--border-radius);
     max-width: 99%;
     font-size: 14px;
 }
 
 x-input[type="date"]{
-    width: 140px;
+    width: 149px;
     margin: 0;
 }
 
@@ -153,6 +153,9 @@ header {
     width: auto;
 }
 
+#start-date {
+    width: 140px;
+}
 
 .buttons {
     margin-top: 40px;

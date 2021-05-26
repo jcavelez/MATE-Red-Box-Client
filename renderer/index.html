@@ -11,7 +11,23 @@
     <link rel="stylesheet" href="../assets/styles/main.css">
     <title>Massive Audio Transcoder Decoder</title>
     <script src="../node_modules/xel/xel.js" type="module"></script>
+    <link rel="stylesheet" href="../assets/styles/xel-custom.css">
 </head>
+<script>
+    function DDMMYYYY(value, event) {
+        console.log(event)
+      let newValue = value.replace(/[^0-9]/g, '').replace(/(\..*)\./g, '$1');
+    
+      const dayOrMonth = (index) => index % 2 === 1 && index < 4;
+    
+      // on delete key.  
+      if (!event.data) {
+        return value;
+      }
+    
+      return newValue.split('').map((v, i) => dayOrMonth(i) ? v + '/' : v).join('');;
+    }
+</script>
 <body>
     <header>
         <img class="header-logo" src="../assets/img/logo.PNG" alt="">
@@ -65,8 +81,8 @@
                     <x-switch toggled disabled></x-switch>
                 </x-box>
                 <x-box class="filter-botton">
-                    <x-input type="date" name="" id="" ></x-input>
-                    <x-input type="time" name="" id="" ></x-input>
+                    <input type="tel" maxlength="10 name="" id="start-date" placeholder="dd/mm/yyyy" oninput="this.value = DDMMYYYY(this.value, event)"></x-input>
+                    <x-input type="time" name="" id="start-time" ></x-input>
                 </x-box>
             </x-card>
             <x-card class="filter" data-field="end-date" disabled>
@@ -108,6 +124,10 @@
     <footer>
         <x-progressbar value="1" max="100"></x-progressbar>
     </footer>
+
+    <x-notification id="notification"></x-notification>
+
+    
     <script src="./main-window/frontend.js" type="module"></script>
 
 </body>

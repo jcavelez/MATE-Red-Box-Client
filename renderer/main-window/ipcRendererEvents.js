@@ -7,19 +7,20 @@ function openDir() {
     console.log('enviado')
 }
 
-function requestStartDownload() {
+function requestStartDownload(options) {
     console.log('enviando senal descarga descarga')
-    let downloadOptions = {
-        resultsToSkip: 0,
-        searchMode: "LatestFirst",
-        startTime: '20210521080000',
-        endTime: '20210521235959',
-        extension:'',
-        channelName: '',
-        outputFormat: 'wav',
-        downloadPath: document.getElementById('download-section-input').value
-    }
-    window.api.send('startDownload', downloadOptions) 
+
+    // let downloadOptions = {
+    //     resultsToSkip: 0,
+    //     searchMode: 'EarlierFirst',
+    //     startTime: '20210521080000',
+    //     endTime: '20210521235959',
+    //     extension:'',
+    //     channelName: '',
+    //     outputFormat: 'wav',
+    //     downloadPath: document.getElementById('download-section-input').value
+    // }
+    window.api.send('startDownload', options) 
 }
 
 function openSearchPreferences() {
@@ -42,6 +43,8 @@ window.api.receive('getPreferences', (prefs) => {
     replaceText('recorder', prefs.lastRecorderIP)
 
     document.getElementById('download-section-input').value = prefs.downloadDirectory
+    document.getElementById('start-date').value = `${prefs.startTime.substring(6,8)}/${prefs.startTime.substring(4,6)}/${prefs.startTime.substring(0,4)}`
+    
 })
 
 export { openDir, loadPreferences, requestStartDownload, openSearchPreferences } 

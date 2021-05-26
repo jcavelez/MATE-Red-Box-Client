@@ -36,12 +36,58 @@ header x-label {
     padding: 12px 20px;
 }
 
+.options {
+    margin: 30px;
+}
 
+.options-item {
+    display: grid;
+    grid-template-columns: 50% 50%;
+    margin-bottom: 10px;
+}
 
+.filename {
+    margin: 30px;
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr ;
+}
 
-
-
-
-.filename-column {
+.filename-label, .filename-column{
+    height: 100%;
+    display: flex;
     flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+
+.filename-column x-label {
+    font-size: 11px;
+}
+
+.filename-check {
+
+    width: 14px;
+    height: 14px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.filename-field {
+    display: grid;
+    grid-template-columns: 1fr 9fr;
+}
+
+.filename-fieldname {
+    padding: 6px;
+}
+
+.buttons {
+    justify-content: flex-end;
+    padding-right: 10%;
+}
+
+.buttons x-button{
+    margin-left: 15px;
 }
