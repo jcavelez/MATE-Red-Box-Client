@@ -117,12 +117,14 @@ ipcMain.on('openExportOptions', (event) => {
   console.log('recibido en main')
   const exportOptionsWindow = new BrowserWindow({
     width: 530,
-    height: 540,
+    height: 500,
     title: 'Preferencias',
     //center: true,
+    parent: win,
     modal: true,
-    frame: true,
-    show: true
+    frame: false,
+    show: true,
+
   })
   console.log(`${path.join(__dirname, './renderer/export-settings.html')}`)
   exportOptionsWindow.loadURL(`${path.join(__dirname, './renderer/export-settings.html')}`)

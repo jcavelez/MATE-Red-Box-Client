@@ -1,4 +1,4 @@
-import { loadPreferences, openDir, requestStartDownload, openSearchPreferences } from './ipcRendererEvents.js'
+import { loadPreferences, openDir, requestStartDownload, openExportPreferences } from './ipcRendererEvents.js'
 
 const openDirectoryBtn = document.getElementById('open-directory')
 const downloadBtn = document.getElementById('download-button')
@@ -19,7 +19,7 @@ function addEvents() {
     switchChannelName.addEventListener('toggle', toggleBox)
     switchExtension.addEventListener('toggle', toggleBox)
     openDirectoryBtn.addEventListener('click', openDir)
-    exportSettingsBtn.addEventListener('click', openSearchPreferences)
+    exportSettingsBtn.addEventListener('click', openExportPreferences)
     downloadBtn.addEventListener('click', validateForm)
     exitBtn.addEventListener('click', exit)
 }
@@ -40,9 +40,9 @@ function enableChildren(node) {
             if(element.tagName != 'X-SWITCH') {
                 enableChildren(element)
             }
+     
         })
     }
-    
     node.removeAttribute("disabled")
 }
 

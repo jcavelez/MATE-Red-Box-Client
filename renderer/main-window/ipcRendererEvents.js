@@ -23,9 +23,12 @@ function requestStartDownload(options) {
     window.api.send('startDownload', options) 
 }
 
-function openSearchPreferences() {
+function openExportPreferences(event) {
     console.log('abrir ventana de opciones de descarga')
+    //closing dialog
+    const dialog = document.getElementById('menu-dialog')
     window.api.send('openExportOptions')
+    dialog.removeAttribute('open')
 }
 
 window.api.receive('recievePath', (data) => {
@@ -44,7 +47,9 @@ window.api.receive('getPreferences', (prefs) => {
 
     document.getElementById('download-section-input').value = prefs.downloadDirectory
     document.getElementById('start-date').value = `${prefs.startTime.substring(6,8)}/${prefs.startTime.substring(4,6)}/${prefs.startTime.substring(0,4)}`
+    document.getElementById('start-time').value = `${prefs.startTime.substring(10,12)}:${prefs.startTime.substring(8,10)}`
+    
     
 })
 
-export { openDir, loadPreferences, requestStartDownload, openSearchPreferences } 
+export { openDir, loadPreferences, requestStartDownload, openExportPreferences } 
