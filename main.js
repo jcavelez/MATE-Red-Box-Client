@@ -7,14 +7,13 @@ const {
 } = require('electron')
 const settings = require('electron-settings')
 const path = require('path')
+const { createDatabase, createSchema } = require('./databaseEvents')
 const devtools = require('./devtools')
 
 let win = null
+const databaseName = 'MATE.db'
+//asegurar que la aplicacion corra en una unica instancia
 const gotTheLock = app.requestSingleInstanceLock()
-
-if (process.env.NODE_ENV === 'development') {
-    devtools.run_dev_tools()
-}
 
 if (!gotTheLock) {
   app.quit()
@@ -25,11 +24,16 @@ if (!gotTheLock) {
       win.focus()
     }
   })
-
-  // Create myWindow, load the rest of the app, etc...
+  
   app.whenReady().then(() => {
+    createDatabase(databaseName) 
+    createSchema()   
     createWindow()
   })
+}
+
+if (process.env.NODE_ENV === 'development') {
+    devtools.run_dev_tools()
 }
 
 function createWindow () {
@@ -98,6 +102,8 @@ ipcMain.on('loadPreferences', (event) => {
     checkNewSettings('startTime', '20210521080000')
     checkNewSettings('endTime', '20301231235959')
     checkNewSettings('outputFormat', 'mp3')
+    checkNewSettings('summary', 'yes')
+    checkNewSettings('overwrite', 'yes')
     checkNewSettings('downloadDirectory', '')
 
     event.sender.send('getPreferences', settings.getSync())
@@ -119,7 +125,7 @@ ipcMain.on('openExportOptions', (event) => {
     width: 530,
     height: 500,
     title: 'Preferencias',
-    //center: true,
+    center: true,
     parent: win,
     modal: true,
     frame: false,

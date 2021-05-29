@@ -4,6 +4,7 @@ const querystring = require('querystring')
 const sleep = require('./sleep.js')
 const fs = require('fs')
 const path = require('path')
+const { saveIDs } = require('./databaseEvents')
 
 const SERVER_URL = 'http://<IP>:1480'
 const LOGIN_URL = '/api/v1/sessions/login'
@@ -68,8 +69,8 @@ async function placeNewSearch(opt) {
                  'authToken': opt.token,
                  'Content-Type': 'application/json'
              })
-        // Waiting ~2 second between requests
-        await sleep(2000)
+        // Esperar ~3 seg entre requests
+        await sleep(3000)
     } 
     
 
@@ -184,7 +185,6 @@ async function startDownload(downloadOptions) {
             downloadOptions.lastRecorderIP,
             downloadOptions.token
             )
-        console.log(newSearch)
         Array.prototype.push.apply(searchResults, newSearch)
         downloadOptions.progress = searchResults.length
         downloadOptions.resultsToSkip += 1000
@@ -192,6 +192,11 @@ async function startDownload(downloadOptions) {
             downloadOptions.numberOfResults = await placeNewSearch(downloadOptions)
         } else {
             downloadOptions.status = 'complete'
+            console.log(searchResults)
+
+            const IDs = searchResults.map(res => res.callID)
+            
+            saveIDs(IDs)
         }
     }
     console.log(` total ids obtenidos ${searchResults.length}`)
@@ -212,7 +217,7 @@ async function startDownload(downloadOptions) {
         await sleep(1000)
     }
 
-    console.log(searchResults)
+    // console.log(searchResults)
 
     await logoutRecorder(downloadOptions.lastRecorderIP,downloadOptions.token)
         .then(res => {

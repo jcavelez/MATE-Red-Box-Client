@@ -1,5 +1,6 @@
 import { loadPreferences, openDir, requestStartDownload, openExportPreferences } from './ipcRendererEvents.js'
 
+
 const openDirectoryBtn = document.getElementById('open-directory')
 const downloadBtn = document.getElementById('download-button')
 const exportSettingsBtn = document.getElementById('export-settings-btn')
@@ -82,6 +83,7 @@ function validateForm() {
 
     let options = {}
     let isValid = false
+
     const validatePath = new RegExp('^[a-z]:(\/|\\\\)([a-zA-Z0-9_ \-]+\\1)*[a-zA-Z0-9_ @\-]+\.$', 'i')
      const directory = document.getElementById('download-section-input').value
 
