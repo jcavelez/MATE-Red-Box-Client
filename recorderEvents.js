@@ -4,7 +4,8 @@ const querystring = require('querystring')
 const sleep = require('./sleep.js')
 const fs = require('fs')
 const path = require('path')
-const { saveIDs } = require('./databaseEvents')
+const { saveIDs, getRecordsUnprocesed, updateRecords } = require('./databaseEvents')
+const { get } = require('electron-settings')
 
 const SERVER_URL = 'http://<IP>:1480'
 const LOGIN_URL = '/api/v1/sessions/login'
@@ -81,15 +82,17 @@ async function placeNewSearch(opt) {
 }
 
 async function getResults(IP, token) {
-    let dataFetched = await fetchData('GET',
-                                        `${SERVER_URL.replace('<IP>',IP)}${SEARCH_RESULTS_URL}`,
-                                        {
-                                            'authToken': token,
-                                            'Content-Type': 'application/json'
-                                        })
-    return dataFetched.callIDs
+    let dataFetched = await fetchData(
+        'GET',
+        `${SERVER_URL.replace('<IP>',IP)}${SEARCH_RESULTS_URL}`,
+        {
+            'authToken': token,
+            'Content-Type': 'application/json'
+        })
+    if (dataFetched) {
+        return dataFetched.callIDs
+    }
 }
-
 
 async function downloadAudio(IP, token, callID, savePath) {
     let options = {
@@ -99,52 +102,78 @@ async function downloadAudio(IP, token, callID, savePath) {
         }
     }
 
-    console.log(`callID: ${callID}`)
+    console.log(`downloadAudio - callID: ${callID}`)
 
-    let response = await fetch(`${SERVER_URL.replace('<IP>', IP)}${CALL_AUDIO_URL.replace('<callID>', callID)}`, options)
+    let response = await fetch(
+        `${SERVER_URL.replace('<IP>', IP)}${CALL_AUDIO_URL.replace('<callID>', callID)}`, options)
         .then((res) => {
             if(res.status === 200) {
-                console.log("200 OK")
-                return res.json()
+                console.log("Solicitud descargar audio 200 OK")
             } else {
                 console.log('---- respuesta no satisfactoria')
                 console.log(res.status)
             }
+            return res.json()
         })
-        .then((res) => {
-            if(res.error) {
-                console.log(res.error)
-                return res.error
+        .then(async (res) => {
+            console.log('respuesta descargar audio')
+            if(res.hasOwnProperty('error')) {
+                return {respuestaGrabador: res.error}
             }
-            console.log(res)
-            
-            let buffer = Buffer.from(res.wavFile)
-            fs.writeFile(path.join(savePath, `${callID}.wav`),buffer, (error) => {
-                if (error) {
-                    console.log('error escribiendo archivo')
-                    console.error(error)
-                }
-            })
+            console.log('Descargando archivo ' + callID)
+            let finalPath = path.join(savePath, `${callID}.wav`)
+            if(res.hasOwnProperty('wavFile')) {
+                let buffer = Buffer.from(res.wavFile)
+                await fs.writeFile(path.join(savePath, `${callID}.wav`),buffer, (error) => {
+                    if (error) {
+                        console.log('error escribiendo archivo')
+                        console.error(error)
+                    }
+                })
+                console.log('Archivo descargado')
+            }
 
-            return 'OK'
+            return {
+                    respuestaGrabador: 'OK',
+                    ruta: finalPath,
+                    fechaDescarga: (new Date()).toISOString()
+                    }
         })
         .catch((err) => {
-            console.log('error fetch')
+            console.log('error descargando audio '  + callID)
             console.log(err)
+            return err
         })
 
-        let det = await fetch(`${SERVER_URL.replace('<IP>', IP)}${CALL_DETAILS_URL.replace('<callID>', callID)}`, options)
+        console.log('enviando respuestado estado descarga')
+
+        return response
+        
+}
+
+async function downloadDetails(IP, token, callID) {
+    let options = {
+        method: 'GET',
+        headers: {
+            'authToken': token
+        }
+    }
+
+    let response = await fetch(
+        `${SERVER_URL.replace('<IP>', IP)}${CALL_DETAILS_URL.replace('<callID>', callID)}`, options)
         .then((res) => {
             if(res.status === 200) {
-                console.log("200 OK")
-                return res.json()
+                console.log("Solicitud descargar detalles: 200 OK")
             } else {
                 console.log('---- respuesta no satisfactoria')
                 console.log(res.status)
             }
+            return res.json()
         })
         .then((res) => {
-            if(res.error) {
+            console.log(`Respuesta convertida a formato json`)
+            //console.log(res)
+            if(res.hasOwnProperty('error')) {
                 console.log(res.error)
                 return res.error
             }
@@ -156,19 +185,14 @@ async function downloadAudio(IP, token, callID, savePath) {
             console.log(err)
         })
 
-        let callDetails = {
-            status: response
-        }
-        
-        det.forEach(field => {
-            callDetails[field.Key] = field.Value
-        });
-        
+    let callDetails = {}
+    response.forEach(field => { callDetails[field.Key] = field.Value })
+    console.log(`Termina downloaDetails - callID: ${callID}\n`)
 
-        return callDetails
+    return callDetails
 }
 
-//TODO: Write IDs in a DB
+
 async function startDownload(downloadOptions) {
 
     let searchResults =[]
@@ -192,33 +216,87 @@ async function startDownload(downloadOptions) {
             downloadOptions.numberOfResults = await placeNewSearch(downloadOptions)
         } else {
             downloadOptions.status = 'complete'
-            console.log(searchResults)
 
             const IDs = searchResults.map(res => res.callID)
-            
             saveIDs(IDs)
         }
     }
-    console.log(` total ids obtenidos ${searchResults.length}`)
-    
-    for (let i = 0; i < searchResults.length; i++) {
-        await downloadAudio(
-            downloadOptions.lastRecorderIP,
-            downloadOptions.token,
-            searchResults[i].callID,
-            downloadOptions.downloadPath
-            )
-            .then((res) => {
-                searchResults[i] = {...searchResults[i], ...res}
-            })
+    console.log(`Total ids obtenidos ${searchResults.length}`)
 
-            console.log(searchResults[i])
-        
-        await sleep(1000)
+    if(searchResults.length === 0) {
+        await logoutRecorder(downloadOptions.lastRecorderIP,downloadOptions.token)
+        .then(res => {
+            console.log(res)
+            console.log('logout')
+        })
+        console.log('EOP')
+
+        return
+    }
+    
+    let idsPackage = getRecordsUnprocesed(10)
+
+    while (idsPackage) {
+        for (const obj of idsPackage) {
+            console.log('\nenviando senal descarga ' + obj.callID)
+            let {... callData } = await downloadAudio(
+                                            downloadOptions.lastRecorderIP,
+                                            downloadOptions.token,
+                                            obj.callID,
+                                            downloadOptions.downloadPath)
+            console.log('llamada descargada? ' + callData.respuestaGrabador)
+            if (callData.respuestaGrabador === 'OK') {
+                callData.idEstado = 3
+                let {...dets} = await downloadDetails(
+                                        downloadOptions.lastRecorderIP,
+                                        downloadOptions.token,
+                                        obj.callID)
+
+                // callData = {
+                //     respuestaGrabador: 'ok',
+                //     ruta: 'la ruta',
+                //     idEstado: 2,
+                //     StartDateTime: 'dets.StartDateTime',
+                //     EndDateTime: 'dets.EndDateTime',
+                //     Duration: 'dets.Duration',
+                //     Direction: 'dets.Direction',
+                //     Extension: 'dets.Extension',
+                //     ChannelName: 'dets.ChannelName',
+                //     OtherParty: 'dets.OtherParty',
+                //     AgentGroup: 'dets.AgentGroup',
+                //     RBRCallGUID: 'dets.RBRCallGUID' 
+                // }
+
+
+                callData = {
+                    ...callData,
+                    StartDateTime: dets.StartDateTime,
+                    EndDateTime: dets.EndDateTime,
+                    Duration: dets.Duration,
+                    Direction: dets.Direction,
+                    Extension: dets.Extension,
+                    ChannelName: dets.ChannelName,
+                    OtherParty: dets.OtherParty,
+                    AgentGroup: dets.AgentGroup,
+                    RBRCallGUID: dets.RBRCallGUID
+                }
+                    
+                console.log({...callData})
+            }
+            else {
+                console.log('error descarga')
+                callData.idEstado = 6
+                console.log({...callData})
+            }
+            
+            updateRecords(callData, obj.callID)
+
+            await sleep(1000)
+        }
+        idsPackage = getRecordsUnprocesed(10)
     }
 
-    // console.log(searchResults)
-
+    console.log('Termina ciclo de descargas. iniciando logout')
     await logoutRecorder(downloadOptions.lastRecorderIP,downloadOptions.token)
         .then(res => {
             console.log(res)

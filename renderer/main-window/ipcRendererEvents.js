@@ -48,8 +48,13 @@ window.api.receive('getPreferences', (prefs) => {
     document.getElementById('download-section-input').value = prefs.downloadDirectory
     document.getElementById('start-date').value = `${prefs.startTime.substring(6,8)}/${prefs.startTime.substring(4,6)}/${prefs.startTime.substring(0,4)}`
     document.getElementById('start-time').value = `${prefs.startTime.substring(10,12)}:${prefs.startTime.substring(8,10)}`
-    
-    
+})
+
+window.api.receive('queryFinished', () => {
+    console.log('queryfinished')
+    const notification = document.getElementById("notification")
+    notification.innerText = 'Descarga terminada'
+    notification.opened = true
 })
 
 export { openDir, loadPreferences, requestStartDownload, openExportPreferences } 

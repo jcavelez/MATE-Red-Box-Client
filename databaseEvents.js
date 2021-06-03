@@ -23,12 +23,12 @@ function createSchema() {
             [3, 'Descargado'], 
             [4, 'Convirtiendo'],
             [5, 'Convertido'],
-            [6, 'Terminado']
+            [6, 'Error']
             ]
             console.log('tabla estados creada')
             status.forEach(element => {
                 const insert = db.prepare(`INSERT INTO Estados VALUES (?, ?)`).run(element)
-                console.log(`insert: ${insert}`)
+                console.log(`insert: ${{...insert}}`)
             })
     }
 
@@ -41,8 +41,17 @@ function createSchema() {
           callID int PRIMARY KEY,
           ruta text, 
           idEstado int,
-          fechaDescarga smalldate,
+          fechaDescarga text,
           respuestaGrabador text,
+          StartDateTime text,
+          EndDateTime text,
+          Duration text,
+          Direction text,
+          Extension text,
+          ChannelName text,
+          OtherParty text,
+          AgentGroup text,
+          RBRCallGUID text,
 		  FOREIGN KEY(idEstado) REFERENCES Estados(Id))`)
             .run()
 
@@ -65,7 +74,22 @@ function createSchema() {
     } catch (error) {
         console.log(error)
     }
-    
+}
+
+function getTop(table, top=1, columns, condition) {
+    try {
+        let query = `SELECT ${columns}
+                    FROM ${table} `
+        query = condition ? query + `WHERE ${condition} ` : query
+        query = query + `LIMIT ${top} `
+        const select = db.prepare(query)
+        const res = select.all()
+        return res
+        
+    } catch (error) {
+        console.error(error)
+    }
+
 }
 
 function insertMany(columns, values) {
@@ -91,7 +115,26 @@ function saveIDs(IDs) {
     }
     const values = IDs.map((id) => [id, 1])
     insertMany(['callID', 'idEstado'], values)
-
 }
 
-module.exports = { createDatabase, createSchema, saveIDs }
+function getRecordsUnprocesed(top=100) {
+    let columns = ['callID']
+    let records = getTop('Grabaciones', top, columns, 'idEstado = 1')
+
+    return records
+}
+
+function updateRecords(data, callID) {
+    const columns = Object.keys(data)
+    const values = Object.values(data)
+    const template = new Array(values.length).fill('?')
+    const update = db.prepare(`
+        UPDATE Grabaciones
+        SET (${columns}) = (${template}) 
+        WHERE callID = ?`)
+    console.log(update)
+    
+    update.run(values, callID)
+}
+
+module.exports = { createDatabase, createSchema, saveIDs, getRecordsUnprocesed, updateRecords}

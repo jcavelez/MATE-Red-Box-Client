@@ -109,14 +109,16 @@ ipcMain.on('loadPreferences', (event) => {
     event.sender.send('getPreferences', settings.getSync())
 })
 
-ipcMain.on('startDownload', (event, downloadOptions) => {
+ipcMain.on('startDownload',async (event, downloadOptions) => {
   const startDownload = require('./recorderEvents.js')
 
   for (const property in downloadOptions) {
     settings.setSync(property, downloadOptions[property])
   }
 
-  startDownload(settings.getSync())
+  await startDownload(settings.getSync())
+
+  event.sender.send('queryFinished')
 })
 
 ipcMain.on('openExportOptions', (event) => {
