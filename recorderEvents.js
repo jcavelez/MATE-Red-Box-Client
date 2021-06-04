@@ -5,6 +5,7 @@ const sleep = require('./sleep.js')
 const fs = require('fs')
 const path = require('path')
 const { saveIDs, getRecordsUnprocesed, updateRecords } = require('./databaseEvents')
+const { convert } = require('./ffmpegEvents.js')
 const { get } = require('electron-settings')
 
 const SERVER_URL = 'http://<IP>:1480'
@@ -118,7 +119,7 @@ async function downloadAudio(IP, token, callID, savePath) {
         .then(async (res) => {
             console.log('respuesta descargar audio')
             if(res.hasOwnProperty('error')) {
-                return {respuestaGrabador: res.error}
+                return res
             }
             console.log('Descargando archivo ' + callID)
             let finalPath = path.join(savePath, `${callID}.wav`)
@@ -174,8 +175,8 @@ async function downloadDetails(IP, token, callID) {
             console.log(`Respuesta convertida a formato json`)
             //console.log(res)
             if(res.hasOwnProperty('error')) {
-                console.log(res.error)
-                return res.error
+                console.log(res)
+                return ([res])
             }
             return res.fields
             
@@ -239,37 +240,14 @@ async function startDownload(downloadOptions) {
     while (idsPackage) {
         for (const obj of idsPackage) {
             console.log('\nenviando senal descarga ' + obj.callID)
-            let {... callData } = await downloadAudio(
-                                            downloadOptions.lastRecorderIP,
-                                            downloadOptions.token,
-                                            obj.callID,
-                                            downloadOptions.downloadPath)
-            console.log('llamada descargada? ' + callData.respuestaGrabador)
-            if (callData.respuestaGrabador === 'OK') {
-                callData.idEstado = 3
-                let {...dets} = await downloadDetails(
-                                        downloadOptions.lastRecorderIP,
-                                        downloadOptions.token,
-                                        obj.callID)
-
-                // callData = {
-                //     respuestaGrabador: 'ok',
-                //     ruta: 'la ruta',
-                //     idEstado: 2,
-                //     StartDateTime: 'dets.StartDateTime',
-                //     EndDateTime: 'dets.EndDateTime',
-                //     Duration: 'dets.Duration',
-                //     Direction: 'dets.Direction',
-                //     Extension: 'dets.Extension',
-                //     ChannelName: 'dets.ChannelName',
-                //     OtherParty: 'dets.OtherParty',
-                //     AgentGroup: 'dets.AgentGroup',
-                //     RBRCallGUID: 'dets.RBRCallGUID' 
-                // }
-
-
+            let callData = {}
+            let {...dets} = await downloadDetails(
+                                    downloadOptions.lastRecorderIP,
+                                    downloadOptions.token,
+                                    obj.callID)
+            if (!dets.hasOwnProperty('error'))
+            {
                 callData = {
-                    ...callData,
                     StartDateTime: dets.StartDateTime,
                     EndDateTime: dets.EndDateTime,
                     Duration: dets.Duration,
@@ -280,18 +258,36 @@ async function startDownload(downloadOptions) {
                     AgentGroup: dets.AgentGroup,
                     RBRCallGUID: dets.RBRCallGUID
                 }
-                    
-                console.log({...callData})
+            }
+
+            let { ...download } = await downloadAudio(
+                                            downloadOptions.lastRecorderIP,
+                                            downloadOptions.token,
+                                            obj.callID,
+                                            downloadOptions.downloadPath)
+            
+            if (download.hasOwnProperty('error')) {
+                callData.respuestaGrabador = download.error
+            } else {
+                callData = { ...download, ...callData }
+            }
+
+            if (callData.respuestaGrabador === 'OK') {
+                callData.idEstado = 3
+                
+                if (downloadOptions.outputFormat != 'wav') {
+                    let conv = convert(callData.ruta, downloadOptions.outputFormat, downloadOptions.overwrite)
+                }
             }
             else {
                 console.log('error descarga')
                 callData.idEstado = 6
-                console.log({...callData})
             }
             
             updateRecords(callData, obj.callID)
 
-            await sleep(1000)
+
+            await sleep(500)
         }
         idsPackage = getRecordsUnprocesed(10)
     }

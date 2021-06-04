@@ -1,4 +1,4 @@
-const Database = require('better-sqlite3');
+const Database = require('better-sqlite3')
 
 let db = null
 
@@ -132,7 +132,6 @@ function updateRecords(data, callID) {
         UPDATE Grabaciones
         SET (${columns}) = (${template}) 
         WHERE callID = ?`)
-    console.log(update)
     
     update.run(values, callID)
 }
