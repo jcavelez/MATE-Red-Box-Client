@@ -7,6 +7,7 @@ const path = require('path')
 const { saveIDs, getRecordsUnprocesed, updateRecords } = require('./databaseEvents')
 const { convert } = require('./ffmpegEvents.js')
 const { get } = require('electron-settings')
+const { rename } = require('./reportEvents.js')
 
 const SERVER_URL = 'http://<IP>:1480'
 const LOGIN_URL = '/api/v1/sessions/login'
@@ -274,7 +275,9 @@ async function startDownload(downloadOptions) {
 
             if (callData.respuestaGrabador === 'OK') {
                 callData.idEstado = 3
-                
+                const newName = rename(callData)
+                callData.ruta = newName
+
                 if (downloadOptions.outputFormat != 'wav') {
                     let conv = convert(callData.ruta, downloadOptions.outputFormat, downloadOptions.overwrite)
                 }
