@@ -4,13 +4,13 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 const path = require('path')
 const deleteFile = require('fs').unlink
 
-function convert(filePath, outputFormat, overwrite) {
-    let newName = path.basename(filePath, '.wav')
+function convert(filePath, outputFormat, dstFile, overwrite) {
+    let fileName = path.basename(filePath, '.wav')
     let dir = path.dirname(filePath)
     let ffmpegCmd = new ffmpeg()
     ffmpegCmd.input(filePath)
-    console.log(path.join(dir,`${newName}.${outputFormat}`))
-    ffmpegCmd.output(path.join(dir,`${newName}.${outputFormat}`))
+    //console.log(path.join(dir,`${fileName}.${outputFormat}`))
+    ffmpegCmd.output(dstFile)
     ffmpegCmd.format(outputFormat)
     ffmpegCmd.audioBitrate('48k')
 

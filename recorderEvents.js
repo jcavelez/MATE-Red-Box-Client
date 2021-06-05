@@ -7,7 +7,7 @@ const path = require('path')
 const { saveIDs, getRecordsUnprocesed, updateRecords } = require('./databaseEvents')
 const { convert } = require('./ffmpegEvents.js')
 const { get } = require('electron-settings')
-const { rename } = require('./reportEvents.js')
+const { createNewName } = require('./reportEvents.js')
 
 const SERVER_URL = 'http://<IP>:1480'
 const LOGIN_URL = '/api/v1/sessions/login'
@@ -174,7 +174,6 @@ async function downloadDetails(IP, token, callID) {
         })
         .then((res) => {
             console.log(`Respuesta convertida a formato json`)
-            //console.log(res)
             if(res.hasOwnProperty('error')) {
                 console.log(res)
                 return ([res])
@@ -260,6 +259,7 @@ async function startDownload(downloadOptions) {
                     RBRCallGUID: dets.RBRCallGUID
                 }
             }
+            callData.idEstado = 2
 
             let { ...download } = await downloadAudio(
                                             downloadOptions.lastRecorderIP,
@@ -268,17 +268,22 @@ async function startDownload(downloadOptions) {
                                             downloadOptions.downloadPath)
             if (download.hasOwnProperty('error')) {
                 callData.respuestaGrabador = download.error
+                callData.idEstado = 6
             } else {
                 callData = { ...download, ...callData }
             }
 
             if (callData.respuestaGrabador === 'OK') {
                 callData.idEstado = 3
-                const newName = rename(callData)
-                callData.ruta = newName
+                const dstFile = createNewName(callData, downloadOptions.outputFormat)
 
                 if (downloadOptions.outputFormat != 'wav') {
-                    let conv = convert(callData.ruta, downloadOptions.outputFormat, downloadOptions.overwrite)
+                    callData.idEstado = 4
+                    let conv = convert(callData.ruta, downloadOptions.outputFormat, dstFile, downloadOptions.overwrite)
+                    if (conv) {
+                        callData.ruta = dstFile
+                        callData.idEstado = 5
+                    }
                 }
             } else {
                 console.log('error descarga')

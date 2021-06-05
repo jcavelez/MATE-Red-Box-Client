@@ -1,7 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 
-function rename (callData) {
+function createNewName (callData, ext) {
     let newName = 
         callData.RBRCallGUID + '_' +
         callData.Extension + '_' +
@@ -10,16 +10,49 @@ function rename (callData) {
         callData.StartDateTime.replaceAll(' ', '_').replaceAll('.', '').replaceAll('/', '-')
             .replaceAll(':', '-')
     const dir = path.dirname(callData.ruta)
-    const ext = path.extname(callData.ruta)
+    const subdir = subfolderName(callData)
+    const newDir = path.join(dir, subdir)
+    makeSubdir(newDir)
+    //const dstFile = path.join(newDir, `${newName}${ext}`)
+    const dstFile = path.join(newDir, `${newName}.${ext}`)
+    //moveFile(callData.ruta, dstFile)
 
-    const newPath = path.join(dir, `${newName}${ext}`)
-    console.log('New name: ' + newPath)
-    fs.rename(callData.ruta, newPath, (err) => {
-        if (err) return callData.ruta
-        else console.log('Rename complete!')
-    })
+    //console.log('New name: ' + dstFile)
+    // fs.rename(callData.ruta, newPath, (err) => {
+    //     if (err) {
+    //         return callData.ruta
+    //     }
+    //     else {
+    //         console.log('Rename complete!')
+    //     }
+    // })
 
-    return newPath
+    return dstFile
 }
 
-module.exports = { rename }
+function subfolderName(callData) {
+    let subdir = []
+    subdir.push(callData.AgentGroup? callData.AgentGroup : 'NO_GROUP')
+    let date = callData.StartDateTime.split(' ')[0].split('/')
+    subdir.push(date[2])
+    subdir.push(date[1])
+    subdir.push(date[0])
+
+    return subdir.join('\\')
+}
+
+function makeSubdir(newDir) {
+    fs.mkdirSync(newDir, { recursive: true}, (err) => {
+        console.log(err)
+    })
+}
+
+function moveFile(src, dst) {
+    console.log(src)
+    console.log(dst)
+    fs.copyFile(src, dst, (err) => {
+        
+    })
+}
+
+module.exports = { createNewName }
