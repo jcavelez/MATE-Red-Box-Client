@@ -22,6 +22,4 @@ function rename (callData) {
     return newPath
 }
 
-
-
 module.exports = { rename }

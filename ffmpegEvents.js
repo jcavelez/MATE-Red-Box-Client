@@ -27,6 +27,7 @@ function convert(filePath, outputFormat, overwrite) {
                 console.log('Archivo wav borrado')
             })
         }
+        return true
       })
     ffmpegCmd.run()
 }

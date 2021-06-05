@@ -11,11 +11,16 @@ const switchEndDate = document.getElementById("switch-end-date")
 const switchExtension = document.getElementById("switch-extension")
 const switchChannelName = document.getElementById("switch-channel-name")
 
+const startDateInput = document.getElementById('start-date')
+
 
 window.addEventListener('load', addEvents)
 window.addEventListener('load', loadPreferences)
 
 function addEvents() {
+    startDateInput.addEventListener('click', (ev) => {
+        ev['target'].value = ''
+    })
     switchEndDate.addEventListener('toggle', toggleBox)
     switchChannelName.addEventListener('toggle', toggleBox)
     switchExtension.addEventListener('toggle', toggleBox)

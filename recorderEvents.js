@@ -236,7 +236,7 @@ async function startDownload(downloadOptions) {
         return
     }
     
-    let idsPackage = getRecordsUnprocesed(10)
+    let idsPackage = getRecordsUnprocesed(100)
 
     while (idsPackage) {
         for (const obj of idsPackage) {
@@ -266,7 +266,6 @@ async function startDownload(downloadOptions) {
                                             downloadOptions.token,
                                             obj.callID,
                                             downloadOptions.downloadPath)
-            
             if (download.hasOwnProperty('error')) {
                 callData.respuestaGrabador = download.error
             } else {
@@ -281,18 +280,17 @@ async function startDownload(downloadOptions) {
                 if (downloadOptions.outputFormat != 'wav') {
                     let conv = convert(callData.ruta, downloadOptions.outputFormat, downloadOptions.overwrite)
                 }
-            }
-            else {
+            } else {
                 console.log('error descarga')
                 callData.idEstado = 6
             }
             
             updateRecords(callData, obj.callID)
 
-
             await sleep(500)
         }
-        idsPackage = getRecordsUnprocesed(10)
+
+        idsPackage = getRecordsUnprocesed(100)
     }
 
     console.log('Termina ciclo de descargas. iniciando logout')
