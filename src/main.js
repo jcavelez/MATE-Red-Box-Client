@@ -156,7 +156,7 @@ ipcMain.on('loadPreferences', (event) => {
     //EMTELCO settings
     checkNewSettings('username', 'descargas')
     checkNewSettings('password', 'descargas')
-    checkNewSettings('lastRecorderIP', '10.3.6.131')
+    checkNewSettings('lastRecorderIP', '10.3.6.132')
 
     checkNewSettings('client', 'EMTELCO')
     checkNewSettings('resultsToSkip', 0)
@@ -249,33 +249,37 @@ ipcMain.on('startDownload', async (event, options) => {
   }
 
   const getDetails = async () => {
-    const workerURL = './src/details-worker.js' 
-    const data = {
-                  workerData: {
-                                IP: options.lastRecorderIP,
-                                token: login.authToken
-                              }
-                  }
-    const worker = new Worker(workerURL, data) 
-
-    worker.on('message', (msg) => {
-      if (msg.type === 'next') {
-        try {
-          const id = getRecordsNoProcesed(1)[0].callID
-          log.info(`Main: Details Next ID ${id}`)
-          worker.postMessage(id)
-        } catch (e) {
-          log.error(`Main: Termina proceso de descarga de detalles de llamada`)
-          worker.terminate()
+    try {
+      const workerURL = `${path.join(__dirname, 'details-worker.js')}`
+      const data = {
+                    workerData: {
+                                  IP: options.lastRecorderIP,
+                                  token: login.authToken
+                                }
+                    }
+      const worker = new Worker(workerURL, data) 
+  
+      worker.on('message', (msg) => {
+        if (msg.type === 'next') {
+          try {
+            const id = getRecordsNoProcesed(1)[0].callID
+            log.info(`Main: Details Next ID ${id}`)
+            worker.postMessage(id)
+          } catch (e) {
+            log.error(`Main: Termina proceso de descarga de detalles de llamada`)
+            worker.terminate()
+          }
+        } else if (msg.type === 'details') {
+          log.info(`Main: CallID ${msg.callID}. Detalles de llamada recibidos`)
+          updateRecords(msg.callData, msg.callID)
         }
-      } else if (msg.type === 'details') {
-        log.info(`Main: CallID ${msg.callID}. Detalles de llamada recibidos`)
-        updateRecords(msg.callData, msg.callID)
-      }
-    })
-
-    workers.push(worker)
-    await sleep(5000)
+      })
+  
+      workers.push(worker)
+      await sleep(5000)
+    } catch (e) {
+      log.error(`Main: Error creando Details Worker. ${e}`)
+    }
   }
 
   const specialClientChecks = async () => {
@@ -310,32 +314,38 @@ ipcMain.on('startDownload', async (event, options) => {
     let queryFails = counter()
     
     for (let i = 0; i < MAX_DOWNLOAD_WORKERS; i++) {
-      log.info('Main: Creando nuevo worker.')
-      const workerURL = './src/download-worker.js'
-      const data = {
-                    workerData: { options }
-                   }
-      const worker = new Worker(workerURL, data) 
-
-      worker.on('message', (msg) => {
-        if (msg.type === 'next') {
-          try {
-            const { ...callData } = getRecordsReadyToDownload(1)[0]
-            log.info(`Main: Download Next ID ${callData.callID}`)
-            updateRecords({idEstado: 2}, callData.callID)
-            worker.postMessage({type: 'call', callData: callData})
-          } catch (e) {
-            log.error(`Main: No se encontraron nuevas grabaciones en estado Listo Para Descargar.`)
-            queryFails.increment()
-            queryFails.value() >= 5 ? stopDownload(event, login.authToken) : worker.postMessage({type: 'wait'})
+      
+      try {
+        
+        log.info('Main: Creando nuevo worker.')
+        const workerURL = `${path.join(__dirname, 'download-worker.js')}`
+        const data = {
+                      workerData: { options }
+                     }
+        const worker = new Worker(workerURL, data) 
+  
+        worker.on('message', (msg) => {
+          if (msg.type === 'next') {
+            try {
+              const { ...callData } = getRecordsReadyToDownload(1)[0]
+              log.info(`Main: Download Next ID ${callData.callID}`)
+              updateRecords({idEstado: 2}, callData.callID)
+              worker.postMessage({type: 'call', callData: callData})
+            } catch (e) {
+              log.error(`Main: No se encontraron nuevas grabaciones en estado Listo Para Descargar.`)
+              queryFails.increment()
+              queryFails.value() >= 5 ? stopDownload(event, login.authToken) : worker.postMessage({type: 'wait'})
+            }
+          } else if (msg.type === 'update') {
+            log.info(`Main: CallID ${msg.callID} cambiando estado BD.`)
+            updateRecords(msg.callData, msg.callID)
           }
-        } else if (msg.type === 'update') {
-          log.info(`Main: CallID ${msg.callID} cambiando estado BD.`)
-          updateRecords(msg.callData, msg.callID)
-        }
-      })
-
-      workers.push(worker)
+        })
+  
+        workers.push(worker)
+      } catch (e) {
+        log.error(`Main: Error creando Download Worker. ${e}`)
+      }
 
       await sleep(100)
     }

@@ -9,7 +9,10 @@
   "scripts": {
     "start": "electron .",
     "build": "cross-env NODE_ENV=development electron src/main.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "postinstall": "electron-builder install-app-deps"
   },
   "private": true,
   "dependencies": {
@@ -31,6 +34,14 @@
   "devDependencies": {
     "cross-env": "^7.0.3",
     "devtron": "^1.4.0",
-    "electron": "^12.0.6"
+    "electron": "^12.0.6",
+    "electron-builder": "^22.11.7"
+  },
+  "build": {
+    "appId": "MATERedBoxClient",
+    "mac": {
+      "category": "enterprise"
+    },
+    "asar": false
   }
 }
