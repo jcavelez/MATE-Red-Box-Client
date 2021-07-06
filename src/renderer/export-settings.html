@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="xel-theme" content="../node_modules/xel/themes/cupertino.css">
+    <meta name="xel-accent-color" content="rgba(13, 71, 159, 1)">
+    <meta name="xel-size" content="small">
+    <meta name="xel-iconset" content="../node_modules/xel/iconsets/material-outlined.svg">
+    <link href="../node_modules/xel-fonts/fonts.css" rel="stylesheet"></link>
+    <link rel="stylesheet" href="../assets/styles/preferences.css">
+    <script src="../node_modules/xel/xel.js" type="module"></script>
+    <title>Opciones de Exportacion</title>
+</head>
+<body>
+    <header>
+        <x-label>Opciones de Descarga</x-label>
+        <img class="header-logo" src="../assets/img/logo_small.PNG" alt="" srcset="">
+    </header>
+    <main>
+        <div class="options">
+            <x-box class="options-item">
+                <x-label>Formato de descarga:</x-label>
+                <x-select id="format-menu" disabled>
+                    <x-menu >
+                        <x-menuitem value="wav">
+                            <x-label>WAV</x-label>
+                        </x-menuitem>
+                        <x-menuitem value="mp3" toggled>
+                            <x-label>MP3</x-label>
+                        </x-menuitem>
+                    </x-menu>
+                </x-select>
+            </x-box>
+            <x-box class="options-item">
+                <x-label>Sobreescribir archivos:</x-label>
+                <x-select disabled>
+                    <x-menu>
+                        <x-menuitem value="si" toggled>
+                            <x-label>Si</x-label>
+                        </x-menuitem>
+                        <x-menuitem value="no">
+                            <x-label>No</x-label>
+                        </x-menuitem>
+                    </x-menu>
+                </x-select>
+            </x-box>
+            <x-box class="options-item">
+                <x-label>Generar informe:</x-label>
+                <x-select disabled>
+                    <x-menu>
+                        <x-menuitem value="si" toggled>
+                            <x-label>Si</x-label>
+                        </x-menuitem>
+                        <x-menuitem value="no">
+                            <x-label>No</x-label>
+                        </x-menuitem>
+                    </x-menu>
+                </x-select>
+            </x-box>
+        </div>
+            <hr>
+
+        <x-box class="filename" disabled>
+            <x-box class="filename-label">
+                <x-label>Nombre de archivo:</x-label>
+            </x-box>
+            <x-box class="filename-column">
+                <x-box class="filename-field">
+                    <x-checkbox class="filename-check" disabled></x-checkbox>
+                    <x-label class="filename-fieldname">ID Llamada</x-label>
+                </x-box>
+                <x-box class="filename-field">
+                    <x-checkbox class="filename-check" toggled disabled></x-checkbox>
+                    <x-label class="filename-fieldname">External Call ID</x-label>
+                </x-box>
+                <x-box class="filename-field">
+                    <x-checkbox class="filename-check" toggled disabled></x-checkbox>
+                    <x-label class="filename-fieldname">Fecha Inicio</x-label>
+                </x-box>
+                <x-box class="filename-field">
+                    <x-checkbox class="filename-check" disabled></x-checkbox>
+                    <x-label class="filename-fieldname">Fecha Fin</x-label>
+                </x-box>
+            </x-box>
+            <x-box class="filename-column">
+                <x-box class="filename-field">
+                    <x-checkbox class="filename-check" toggled disabled></x-checkbox>
+                    <x-label class="filename-fieldname">Extension</x-label>
+                </x-box>
+                <x-box class="filename-field">
+                    <x-checkbox class="filename-check" toggled disabled></x-checkbox>
+                    <x-label class="filename-fieldname">Nombre de Canal</x-label>
+                </x-box>
+                <x-box class="filename-field">
+                    <x-checkbox class="filename-check" toggled disabled></x-checkbox>
+                    <x-label class="filename-fieldname">Otro Usuario</x-label>
+                </x-box>
+                <x-box class="filename-field">
+                    <x-checkbox class="filename-check" toggled disabled></x-checkbox>
+                    <x-label class="filename-fieldname">Grupo de Agente</x-label>
+                </x-box>
+            </x-box>
+        </x-box>
+        
+
+        <x-box class="buttons">
+            <x-button id="save">Guardar</x-button>
+            <x-button id="exit">Cancelar</x-button>
+        </x-box>
+
+
+    </main>
+    <script src="./export-settings-window/frontend-exp.js"></script>
+</body>
+</html>

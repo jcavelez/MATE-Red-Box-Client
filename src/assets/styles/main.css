@@ -1,0 +1,205 @@
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    /* ----- Font sizes */
+  --title-size: 40px;
+  --subtitle-size: 34px;
+  --description-size: 24px;
+  --p-size: 21px;
+  --small-size: 10px;
+
+  --border-radius: 10px
+
+}
+
+#menu-dialog {
+    width: 250px;
+    height: 185px;
+    top: 70px;
+    left: auto;
+    right: 0;
+    border-radius: 10px 0 0 10px;
+    padding: 10px 10px; 
+}
+
+#download-dialog {
+    width: 530px;
+    height: 300px;
+    top: 150px;
+    border-radius: 10px 10px;
+}
+
+#download-dialog::backdrop {
+    pointer-events: none;
+  }
+
+
+x-input, input {
+    border-radius: var(--border-radius);
+    max-width: 99%;
+    font-size: 14px;
+}
+
+x-input[type="date"]{
+    width: 149px;
+    margin: 0;
+}
+
+x-input[type="time"]{
+    width: 110px;
+    margin: 0;
+}
+
+
+header {
+    height: 100px;
+    border: 1px solid #707070;
+
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.header-logo {
+    width: auto;
+    height: 90%;
+    margin: 6px;
+}
+
+.header-menu {
+    margin: 20px;
+    height: 50px;
+    position: relative;
+    border: none;
+}
+
+.header-menu x-icon[name="menu"] {    
+    color: #444;
+    width: 45px;
+    height: 45px;
+}
+
+.menu-item:hover {
+    background-color: rgba(0, 0, 0, 0.10);
+}
+
+
+.status {
+    font-size: var(--small-size);
+    height: 20px;
+    
+    margin-top: 15px;
+    margin-right: 20px;
+    
+    display: flex;
+    justify-content: flex-end;
+}
+
+.status x-label{
+    font-size: var(--small-size);
+}
+
+.status-connection {
+    margin-left: 10px;
+}
+
+.download-section {
+    width: 100%;
+    padding: 25px;
+}
+
+.download-section-label {
+    margin-left: 10px;
+    width: fit-content;
+}
+
+.download-section-inputs {
+    display: flex;
+    justify-content: flex-start;
+    margin-top: 10px;
+}
+
+.download-section-inputs x-input {
+    max-width: 100%;
+    width: 93%;
+}
+
+.download-section-button {
+    border: none;
+    color: #676767;
+    margin-left: 5px;
+}
+
+.download-section-button:hover {
+    border: 1px solid #777777;
+}
+
+.filters {
+    display: flex;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    padding: 12px;
+}
+
+.filter {
+    width: 204px;
+    height: 108px;
+
+    margin: 8px;
+    padding: 12px 16px 24px 16px
+}
+
+.filter-top {
+    justify-content: space-between;
+    padding-bottom: 8px;
+}
+
+.filter-botton {
+    justify-content: space-between;
+    padding-bottom: 0px;
+}
+
+.filter-name {
+    width: auto;
+}
+
+.filter-date {
+    text-align: center;
+    width: 95px;
+}
+.filter-hour {
+    text-align: center;
+    width: 61px;
+    margin: 0;
+}
+
+.buttons {
+    margin-top: 35px;
+    display: flex;
+    justify-content: center;
+}
+
+footer {
+    display: flex;
+    justify-content: center;
+    margin-top: 30px;
+    padding-bottom: 15px;
+    /* position: fixed; */
+    /* bottom: 20px; */
+    width: 100%;
+}
+
+footer x-progressbar {
+    width: 90%;
+}
+
+.error {
+    width: 95px;
+    color: #FF4949;
+    font-size: 10px;
+    text-align: center;
+    margin-top: 3px;
+
+}

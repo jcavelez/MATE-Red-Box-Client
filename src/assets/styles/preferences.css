@@ -1,0 +1,93 @@
+:root {
+    /* ----- Font sizes */
+  --title-size: 24px;
+  --subtitle-size: 34px;
+  --description-size: 24px;
+  --p-size: 21px;
+  --small-size: 16px;
+
+  --black-color: #707070;
+  --weight: 300;
+
+}
+
+* {
+    color: var(--black-color);
+    font-weight: var(--weight);
+}
+
+header {
+    height: 100px;
+
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+header x-label {
+    padding: 32px 24px;
+
+    font-size: var(--title-size);
+    font-weight: 300;
+}
+
+.header-logo {
+    width: auto;
+    height: 80%;
+    padding: 12px 20px;
+}
+
+.options {
+    margin: 30px;
+}
+
+.options-item {
+    display: grid;
+    grid-template-columns: 50% 50%;
+    margin-bottom: 10px;
+}
+
+.filename {
+    margin: 30px;
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr ;
+}
+
+.filename-label, .filename-column{
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+
+.filename-column x-label {
+    font-size: 11px;
+}
+
+.filename-check {
+
+    width: 14px;
+    height: 14px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.filename-field {
+    display: grid;
+    grid-template-columns: 1fr 9fr;
+}
+
+.filename-fieldname {
+    padding: 6px;
+}
+
+.buttons {
+    justify-content: flex-end;
+    padding-right: 10%;
+}
+
+.buttons x-button{
+    margin-left: 15px;
+}
