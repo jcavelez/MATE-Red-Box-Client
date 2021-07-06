@@ -80,11 +80,13 @@ function createWindow () {
 
 const stopDownload = (event, token) => {
   log.info(`Main: Senal stop recibida. Eliminando procesos`)
-  workers.forEach(worker => {
-  worker.terminate()
-  worker.unref()
-  })
 
+  await sleep(5000)
+
+  workers.forEach(worker => {
+    worker.terminate()
+    worker.unref()
+  })
   workers = []
   downloadRunning = false
   const { logoutRecorder } = require('./recorderEvents.js')
@@ -210,7 +212,6 @@ ipcMain.on('startDownload', async (event, options) => {
 
   const { loginRecorder } = require('./recorderEvents.js')
   const { search } = require('./recorderEvents.js')
-  const { logoutRecorder } = require('./recorderEvents.js')
 
   const recorderIP = options.lastRecorderIP
   const username = options.username
