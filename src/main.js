@@ -6,13 +6,9 @@ const path = require('path')
 const { createDatabase, createSchema, getRecordsNoProcesed, 
         getRecordsNoChecked, getRecordsReadyToDownload, updateRecords 
       } = require('./databaseEvents')
-const { ExternalCallIDCheck } = require('./assets/lib/EMTELCO.js')
 const devtools = require('./devtools')
-const log = require('electron-log');
-const sleep = require('./sleep.js')
-const counter = require('./assets/lib/counter.js')
-const { Worker } = require('worker_threads')
-//const Recorder = require('./assets/lib/Recorder')
+const log = require('electron-log')
+const { beginDownloadCycle, stopDownload} = require('./download-cycle')
 
 console.log = log.log
 settings.configure({prettify: true})
@@ -20,11 +16,8 @@ log.transports.file.level = 'info'
 log.transports.file.maxSize = 5242880
 //TODO: log level in setting file.
 let win = null
-let workers = []
 const databaseName = 'MATE.db'
-const MAX_DOWNLOAD_WORKERS = 2
-let downloadRunning = false
-let login = {}
+
 
 //asegurar que la aplicacion corra en una unica instancia
 const gotTheLock = app.requestSingleInstanceLock()
@@ -76,22 +69,6 @@ function createWindow () {
   log.info(`Main: Preload file ${path.join(__dirname, 'preload.js')}`)
   log.info('Main: Ventana principal creada')
   log.info('Main: Archivo contenido ventana principal cargado ' + path.join(__dirname, 'renderer/index.html'))
-}
-
-const stopDownload = (event, token) => {
-  log.info(`Main: Senal stop recibida. Eliminando procesos`)
-  //time added to wait transcoding and report finished
-  await sleep(5000)
-
-  workers.forEach(worker => {
-    worker.terminate()
-    worker.unref()
-  })
-  workers = []
-  downloadRunning = false
-  const { logoutRecorder } = require('./recorderEvents.js')
-  logoutRecorder(settings.getSync('lastRecorderIP'), token)
-  event.sender.send('queryFinished')
 }
 
 //*******************EVENTOS ********************** */
@@ -183,9 +160,8 @@ ipcMain.on('openExportOptions', (event) => {
 
 ipcMain.on('startDownload', async (event, options) => {
   log.info('Main: Senal de inicio de busqueda recibida')
-  downloadRunning = true
   
-  //primero guardo todo en los settings de electron para cargarlos la 
+  //Se guarda la info recibida de la web en los settings de electron para cargarlos la 
   //proxima vez que se abra la aplicación.
   log.info('Main: Guardando parametros de busqueda')
   for (const property in options) {
@@ -195,163 +171,13 @@ ipcMain.on('startDownload', async (event, options) => {
 
   options = settings.getSync()
 
-  const { loginRecorder } = require('./recorderEvents.js')
-  const { search } = require('./recorderEvents.js')
-
-  const recorderIP = options.lastRecorderIP
-  const username = options.username
-  const password = options.password
-
-  const getToken = async () => {
-    log.info('Main: Solicitud login ' + recorderIP)
-    login = await loginRecorder(recorderIP, username, password)
-  }
-
-  const checkToken = async () => {
-    if (login.hasOwnProperty('authToken')) {
-      log.info('Main: Validando login OK')
-      await sleep(1000)
-      event.sender.send('newToken', login.authToken)
-      event.sender.send('recorderSearching')
-      return true
-    } else if (login.hasOwnProperty('error')) {
-      log.error('Main: Validando login Error ' + login.error)
-      await sleep(1000)
-      event.sender.send('recorderLoginError', login.error)
-      return false
-    }
-    else {
-      log.error('Main: Validando login Error: ' + login.type + ' ' + login.errno)
-      event.sender.send('recorderLoginError', login.type + ' ' + login.errno )
-      return false
-    }
-  }
-
-  
-  const beginSearch = async () => {
-    log.info('Main: solicitud busqueda')
-    let nResults =  await search(options, login.authToken)
-    log.info('Main: resultados recibidos')
-  }
-
-  const getDetails = async () => {
-    try {
-      const workerURL = `${path.join(__dirname, 'details-worker.js')}`
-      const data = {
-                    workerData: {
-                                  IP: options.lastRecorderIP,
-                                  token: login.authToken
-                                }
-                    }
-      const worker = new Worker(workerURL, data) 
-  
-      worker.on('message', (msg) => {
-        if (msg.type === 'next') {
-          try {
-            const id = getRecordsNoProcesed(1)[0].callID
-            log.info(`Main: Details Next ID ${id}`)
-            worker.postMessage(id)
-          } catch (e) {
-            log.error(`Main: Termina proceso de descarga de detalles de llamada`)
-            worker.terminate()
-          }
-        } else if (msg.type === 'details') {
-          log.info(`Main: CallID ${msg.callID}. Detalles de llamada recibidos`)
-          updateRecords(msg.callData, msg.callID)
-        }
-      })
-  
-      workers.push(worker)
-      await sleep(5000)
-    } catch (e) {
-      log.error(`Main: Error creando Details Worker. ${e}`)
-    }
-  }
-
-  const specialClientChecks = async () => {
-    
-    try {
-      
-      if (options.client === 'EMTELCO') {
-        log.info(`Client Checks: EMTELCO`)
-
-        //downloadRunning modificado a false en stop search
-        while (downloadRunning) {
-          let call = getRecordsNoChecked(1)[0]
-          if (call === undefined) {
-            log.info(`EMTELCO Check: No se encontro nuevo registro.`)
-            await sleep(5000)
-            continue
-          }
-          log.info(`EMTELCO Check: Buscando ExternalCallID para ${call.callID}`)
-          const newExternalCallID = ExternalCallIDCheck(call)
-          log.info(`EMTELCO Check: CallID ${call.callID} asociado a ${newExternalCallID}`)
-          updateRecords({ExternalCallID: newExternalCallID}, call.callID)
-        }
-      }
-    } catch (e) {
-      log.error(`EMTELCO Check: Error ${e}`)
-    }
-
-  }
-
-  const download = async () => {
-    event.sender.send('recorderDownloading')
-    let queryFails = counter()
-    
-    for (let i = 0; i < MAX_DOWNLOAD_WORKERS; i++) {
-      
-      try {
-        
-        log.info('Main: Creando nuevo worker.')
-        const workerURL = `${path.join(__dirname, 'download-worker.js')}`
-        const data = {
-                      workerData: { options }
-                     }
-        const worker = new Worker(workerURL, data) 
-  
-        worker.on('message', (msg) => {
-          if (msg.type === 'next') {
-            try {
-              const { ...callData } = getRecordsReadyToDownload(1)[0]
-              log.info(`Main: Download Next ID ${callData.callID}`)
-              updateRecords({idEstado: 2}, callData.callID)
-              worker.postMessage({type: 'call', callData: callData})
-            } catch (e) {
-              log.error(`Main: No se encontraron nuevas grabaciones en estado Listo Para Descargar.`)
-              queryFails.increment()
-              queryFails.value() >= 5 ? stopDownload(event, login.authToken) : worker.postMessage({type: 'wait'})
-            }
-          } else if (msg.type === 'update') {
-            log.info(`Main: CallID ${msg.callID} cambiando estado BD.`)
-            updateRecords(msg.callData, msg.callID)
-          }
-        })
-  
-        workers.push(worker)
-      } catch (e) {
-        log.error(`Main: Error creando Download Worker. ${e}`)
-      }
-
-      await sleep(100)
-    }
-  }
-
-  const beginDownloadCicle = async () => {
-    await getToken()
-    if (await checkToken()) {
-      await beginSearch()
-      getDetails()
-      specialClientChecks()
-      download()
-      //manejar logout
-    }
-  }
-
-  await beginDownloadCicle()  
+  await beginDownloadCycle(event, options)  
 
 })
 
 
-ipcMain.on('stop', stopDownload)
+ipcMain.on('stop', (event, token) => {
+  const IP = settings.getSync('lastRecorderIP')
+  stopDownload(event, IP, token)
+})
 

@@ -37,6 +37,7 @@ async function fetchData(method, url, headers, data={}) {
         let response = await fetch(url, options)
         log.info('Fetch: Respuesta ' + response.status + ' ' + response.statusText)
         let results = await response.json()
+        if (results.hasOwnProperty('error')) log.error(`Fetch:${results.error} `) 
 
         return results
     } catch (e) {
