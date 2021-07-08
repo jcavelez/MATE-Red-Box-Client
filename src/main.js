@@ -10,6 +10,7 @@ const { ExternalCallIDCheck } = require('./assets/lib/EMTELCO.js')
 const devtools = require('./devtools')
 const log = require('electron-log');
 const sleep = require('./sleep.js')
+const counter = require('./assets/lib/counter.js')
 const { Worker } = require('worker_threads')
 //const Recorder = require('./assets/lib/Recorder')
 
@@ -37,7 +38,6 @@ if (!gotTheLock) {
       win.focus()
     }
   })
-  
   
   app.whenReady().then(() => {
     log.info('Main: App Ready')
@@ -80,7 +80,7 @@ function createWindow () {
 
 const stopDownload = (event, token) => {
   log.info(`Main: Senal stop recibida. Eliminando procesos`)
-
+  //time added to wait transcoding and report finished
   await sleep(5000)
 
   workers.forEach(worker => {
@@ -94,19 +94,6 @@ const stopDownload = (event, token) => {
   event.sender.send('queryFinished')
 }
 
-const counter = () => {
-  let privateCounter = 0
-
-  const changeBy = (val) => {
-    privateCounter  += val
-  }
-  return {
-    increment: () => { changeBy(1) },
-    decrement: () => { changeBy(-1) },
-    value: () =>  privateCounter 
-  }
-}
-
 //*******************EVENTOS ********************** */
 
 app.on('window-all-closed', () => {
@@ -116,10 +103,6 @@ app.on('window-all-closed', () => {
   }
 })
 
-//prueba de comunicacion entre procesos
-ipcMain.on('toMain', (event, args) => {
-  console.log(`recibido en main ${args}`)
-})
 
 ipcMain.on('openDir', (event) => {
   const { dialog } = require('electron');
@@ -139,6 +122,7 @@ ipcMain.on('openDir', (event) => {
     }
   }).catch(err => log.error('Main: Handle Error ',err))
 })
+
 
 ipcMain.on('loadPreferences', (event) => {
   log.info('Main: DOM content loaded')
@@ -195,6 +179,7 @@ ipcMain.on('openExportOptions', (event) => {
     exportOptionsWindow.focus()
   })
 })
+
 
 ipcMain.on('startDownload', async (event, options) => {
   log.info('Main: Senal de inicio de busqueda recibida')
@@ -366,6 +351,7 @@ ipcMain.on('startDownload', async (event, options) => {
   await beginDownloadCicle()  
 
 })
+
 
 ipcMain.on('stop', stopDownload)
 
