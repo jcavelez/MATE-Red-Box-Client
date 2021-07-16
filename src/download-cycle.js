@@ -1,13 +1,14 @@
 const log = require('electron-log')
 const path = require('path')
-const { Worker } = require('worker_threads')
 const sleep = require('./sleep.js')
 const { ExternalCallIDCheck }= require('./assets/lib/EMTELCO.js')
 const counter = require('./assets/lib/counter.js')
 const { loginRecorder } = require('./recorderEvents.js')
+const { logoutRecorder } = require('./recorderEvents.js')
 const { search } = require('./recorderEvents.js')
 const { getRecordsNoProcesed, getRecordsNoChecked, getRecordsReadyToDownload, updateRecords 
 } = require('./databaseEvents')
+const { Worker } = require('worker_threads')
 
 let downloadRunning = false
 let login = {}
@@ -26,10 +27,11 @@ const beginDownloadCycle = async (event, options) => {
   if (await checkToken(event)) {
     downloadRunning = true
     await beginSearch(options)
-    getDetails(recorderIP)
+    await logoutRecorder(recorderIP, login.authToken)
+
+    getDetails(options)
     specialClientChecks(client)
     download(event, options)
-    //manejar logout
   }
 }
 
@@ -64,25 +66,27 @@ const beginSearch = async (options) => {
   log.info(`Main: ${nResults} resultados recibidos`)
 }
 
-const getDetails = async (recorderIP) => {
+const getDetails = async (options) => {
   try {
+    log.info('Main: Creando nuevo worker.')
     const workerURL = `${path.join(__dirname, 'details-worker.js')}`
     const data = {
                   workerData: {
-                                IP: recorderIP,
-                                token: login.authToken
+                                options
                               }
                   }
     const worker = new Worker(workerURL, data) 
 
-    worker.on('message', (msg) => {
+    worker.on('message', async (msg) => {
       if (msg.type === 'next') {
         try {
           const id = getRecordsNoProcesed(1)[0].callID
           log.info(`Main: Details Next ID ${id}`)
-          worker.postMessage(id)
+          worker.postMessage({type: 'call', callID: id})
         } catch (e) {
           log.error(`Main: Termina proceso de descarga de detalles de llamada`)
+          worker.postMessage({type: 'finish'})
+          await sleep(1000)
           worker.terminate()
         }
       } else if (msg.type === 'details') {
@@ -141,6 +145,7 @@ const download = async (event, options) => {
       const worker = new Worker(workerURL, data) 
 
       worker.on('message', (msg) => {
+
         if (msg.type === 'next') {
           try {
             const { ...callData } = getRecordsReadyToDownload(1)[0]
@@ -183,7 +188,7 @@ const stopDownload = async (event, IP, token) => {
   })
   workers = []
   downloadRunning = false
-  const { logoutRecorder } = require('./recorderEvents.js')
+  
   logoutRecorder(IP, token)
   event.sender.send('queryFinished')
 }
