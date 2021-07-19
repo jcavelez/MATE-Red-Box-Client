@@ -134,9 +134,7 @@ const download = async (event, options) => {
   let queryFails = counter()
   
   for (let i = 0; i < MAX_DOWNLOAD_WORKERS; i++) {
-    
     try {
-      
       log.info('Main: Creando nuevo worker.')
       const workerURL = `${path.join(__dirname, 'download-worker.js')}`
       const data = {
@@ -170,8 +168,6 @@ const download = async (event, options) => {
     } catch (e) {
       log.error(`Main: Error creando Download Worker. ${e}`)
     }
-    
-
     await sleep(100)
   }
 }
