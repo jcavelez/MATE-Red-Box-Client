@@ -30,6 +30,7 @@ const beginDownloadCycle = async (event, options) => {
     await logoutRecorder(recorderIP, login.authToken)
 
     getDetails(options)
+    await sleep(2000)
     specialClientChecks(client)
     download(event, options)
   }
@@ -103,7 +104,6 @@ const getDetails = async (options) => {
 }
 
 const specialClientChecks = async (client) => {
-  log.info('<------------------' + client)
     
   try {
     

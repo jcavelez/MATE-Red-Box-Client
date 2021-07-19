@@ -144,7 +144,7 @@ function getRecordsReadyToDownload(top=1) {
         let query = `SELECT *
                     FROM Grabaciones 
                     WHERE idEstado = 1
-                    and ExternalCallID != ''
+                    
                     ORDER BY
                     callID ASC
                     LIMIT ${top}`
