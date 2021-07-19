@@ -93,8 +93,8 @@ async function placeNewSearch(opt) {
         header = {'authToken': opt.token,'Content-Type': 'application/json'}
         searchStatus = await fetchData('GET', url, header)
         log.info('Search: status ' + searchStatus.statusShort)
-        // Esperar ~5 seg entre requests
-        await sleep(5000)
+        // Esperar ~4 seg entre requests
+        await sleep(4000)
     } 
     
     if(searchStatus.statusShort === 'Complete') {
@@ -204,7 +204,6 @@ async function downloadAudio(IP, token, callID, savePath) {
 
 async function search(downloadOptions, token) {
     const { saveIDs } = require('./databaseEvents.js')
-    let searchResults =[]
     downloadOptions.token = token
     downloadOptions.status = 'incomplete'
     downloadOptions.progress = 0
@@ -214,21 +213,20 @@ async function search(downloadOptions, token) {
         const newSearch = await getResults(
                                 downloadOptions.lastRecorderIP,
                                 downloadOptions.token)
-        Array.prototype.push.apply(searchResults, newSearch)
-        downloadOptions.progress = searchResults.length
-        downloadOptions.resultsToSkip += 1000
-        if (downloadOptions.resultsToSkip < downloadOptions.numberOfResults) {
+        if(newSearch) {
+            downloadOptions.resultsToSkip += 1000
+            downloadOptions.progress += newSearch.length
+            const IDs = newSearch.map(res => res.callID)
+            log.info('Search: Guardando resultados en BD')
+            saveIDs(IDs.sort((a, b) => a - b))
+            log.info(`Search: ${newSearch.length} IDs guardados en BD`)
             downloadOptions.numberOfResults = await placeNewSearch(downloadOptions)
         } else {
             downloadOptions.status = 'complete'
-            const IDs = searchResults.map(res => res.callID)
-            log.info('Search: Guardando resultados en BD')
-            saveIDs(IDs.sort((a, b) => a - b))
         }
     }
-    log.info(`Search: Total IDs obtenidos ${searchResults.length}`)
     
-    return searchResults.length
+    return downloadOptions.progress
 }
 
 module.exports = { loginRecorder, search, logoutRecorder, downloadDetails, downloadAudio }

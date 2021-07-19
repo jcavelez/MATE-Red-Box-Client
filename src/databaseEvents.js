@@ -67,6 +67,12 @@ function createSchema() {
         }
     } catch (error) {
         log.error(`SQLite3: ${error}`)
+        try {
+            // Resetea la tabla cuando se inicia el programa.
+            db.prepare('DELETE FROM Grabaciones').run() // <----------------DELETE ON PRODUCTION??
+        } catch (error2) {
+            log.error(`SQLite3: ${error2}`)
+        }
     }
 
     try {
@@ -122,11 +128,6 @@ function insertMany(columns, values) {
 }
 
 function saveIDs(IDs) {
-    try {
-        db.prepare('DELETE FROM Grabaciones').run() // <-----------------------DELETE ON PRODUCTION
-    } catch (error) {
-        log.error(`SQLite3: ${error}`)
-    }
     const values = IDs.map((id) => [id, 0])
     insertMany(['callID', 'idEstado'], values)
 }

@@ -123,7 +123,7 @@ ipcMain.on('loadPreferences', (event) => {
 
     checkNewSettings('client', 'EMTELCO')
     checkNewSettings('resultsToSkip', 0)
-    checkNewSettings('searchMode', 'LatestFirst')
+    checkNewSettings('searchMode', 'EarliestFirst')
     checkNewSettings('startTime', '20210501000000')
     checkNewSettings('endTime', '20210531235959')
     checkNewSettings('outputFormat', 'mp3')
