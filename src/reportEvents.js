@@ -1,6 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 const log = require('electron-log')
+const zeroFill = require('./assets/lib/zeroFill.js')
 
 function createNewFileName (callData, ext) {
     let date = callData.StartDateTime.split(' ')[0].split('/')
@@ -28,8 +29,8 @@ function subfolderName(callData) {
     subdirForFile.push(callData.AgentGroup? callData.AgentGroup : 'NO_GROUP')
     let date = callData.StartDateTime.split(' ')[0].split('/')
     subdirForFile.push(date[2])
-    subdirForFile.push(date[0])
-    subdirForFile.push(date[1])
+    subdirForFile.push(zeroFill(date[0], 2))
+    subdirForFile.push(zeroFill(date[1], 2))
 
     return subdirForFile.join('\\')
 }
