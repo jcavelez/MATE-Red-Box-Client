@@ -37,8 +37,6 @@ async function beginDownload(callData) {
         await logoutRecorder(IP, login.authToken)  
         parentPort.postMessage({type: 'next'}) 
     }
-    
-    
 }
 
 async function processCall(callData, token) {

@@ -10,7 +10,7 @@ log.info(`Worker Download Details: Creado`)
 const IP = workerData.options.lastRecorderIP
 const username = workerData.options.username
 const password = workerData.options.password
-let token;
+let token
 
 parentPort.on('message', (msg) => {
     if (msg.type == 'call') {
@@ -24,14 +24,10 @@ parentPort.on('message', (msg) => {
     const login = await loginRecorder(IP, username, password)
     if (await checkToken(login)) {
         log.info(`Worker Download Details: Solicitando nuevo Call ID`)
-        log.info(login.authToken)
         token = login.authToken 
         parentPort.postMessage({type: 'next'})
     }
-                    
-
 })()
-
 
 async function processCall(callID) {
     log.info(`Worker Download Details: Inicio procesamiento CallID ${callID}`)
