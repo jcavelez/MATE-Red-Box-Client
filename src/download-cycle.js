@@ -103,6 +103,7 @@ const getDetails = async (options) => {
 }
 
 const specialClientChecks = async (client) => {
+  log.info('<------------------' + client)
     
   try {
     

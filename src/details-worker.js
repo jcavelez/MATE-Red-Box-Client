@@ -33,7 +33,6 @@ async function processCall(callID) {
     log.info(`Worker Download Details: Inicio procesamiento CallID ${callID}`)
     const { downloadDetails } = require('./recorderEvents.js')
     let callData
-    log.info(token)
 
     let {...dets} = await downloadDetails(IP, token, callID)
 

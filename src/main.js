@@ -121,7 +121,7 @@ ipcMain.on('loadPreferences', (event) => {
     checkNewSettings('password', 'descargas')
     checkNewSettings('lastRecorderIP', '10.3.6.132')
 
-    checkNewSettings('client', 'EMTELCO')
+    checkNewSettings('client', '')
     checkNewSettings('resultsToSkip', 0)
     checkNewSettings('searchMode', 'EarliestFirst')
     checkNewSettings('startTime', '20210501000000')
@@ -180,4 +180,3 @@ ipcMain.on('stop', (event, token) => {
   const IP = settings.getSync('lastRecorderIP')
   stopDownload(event, IP, token)
 })
-
