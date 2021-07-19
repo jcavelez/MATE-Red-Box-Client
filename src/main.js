@@ -39,7 +39,7 @@ if (!gotTheLock) {
     log.info('Main: Solicitud crear schema')   
     createSchema()
     log.info('Main: Solicitud crear ventana')
-    createWindow()
+    createLoginWindow()
   })
 }
 
@@ -49,6 +49,22 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 //***********Funciones**************************/
+function createLoginWindow () {
+  const loginWindow = new BrowserWindow({
+    width: 420,
+    height: 455,
+    title: 'Login',
+    center: true,
+    parent: win,
+    modal: false,
+    frame: true,
+    autoHideMenuBar: true,
+    show: true,
+  })
+  loginWindow.loadURL(path.join(__dirname, './renderer/login.html'))
+}
+
+
 function createWindow () {
   win = new BrowserWindow({
     width: 485,
@@ -61,6 +77,7 @@ function createWindow () {
     },
     maximizable: false,
     show: true,
+    autoHideMenuBar: true,
     icon: path.join(__dirname, 'assets', 'icons', 'logo_small.png')
   })
 
@@ -104,36 +121,36 @@ ipcMain.on('openDir', (event) => {
 ipcMain.on('loadPreferences', (event) => {
   log.info('Main: DOM content loaded')
     
-    const checkNewSettings = (key, value) => {
-        if (!settings.hasSync(key)) {
-            settings.setSync(key,value)
-            log.info(key + ': ' + value)
-          }
-        }
-    log.info('Main: Cargando opciones de configuracion de usuario. Archivo: ' + settings.file())
-    //Testing enviroment
-    // checkNewSettings('username', 'admin')
-    // checkNewSettings('password', 'recorder')
-    // checkNewSettings('lastRecorderIP', '192.168.221.128')
+  const checkNewSettings = (key, value) => {
+    if (!settings.hasSync(key)) {
+        settings.setSync(key,value)
+        log.info(key + ': ' + value)
+      }
+  }
 
-    //EMTELCO settings
-    checkNewSettings('username', 'descargas')
-    checkNewSettings('password', 'descargas')
-    checkNewSettings('lastRecorderIP', '10.3.6.132')
+  log.info('Main: Cargando opciones de configuracion de usuario. Archivo: ' + settings.file())
+  //Testing enviroment
+  // checkNewSettings('username', 'admin')
+  // checkNewSettings('password', 'recorder')
+  // checkNewSettings('lastRecorderIP', '192.168.221.128')
 
-    checkNewSettings('client', '')
-    checkNewSettings('resultsToSkip', 0)
-    checkNewSettings('searchMode', 'EarliestFirst')
-    checkNewSettings('startTime', '20210501000000')
-    checkNewSettings('endTime', '20210531235959')
-    checkNewSettings('outputFormat', 'mp3')
-    checkNewSettings('summary', 'yes')
-    checkNewSettings('overwrite', 'yes')
-    checkNewSettings('downloadDirectory', 'C:\\')
-    checkNewSettings('logLevel', 'INFO')
-    
+  //EMTELCO settings
+  checkNewSettings('username', 'descargas')
+  checkNewSettings('password', 'descargas')
+  checkNewSettings('lastRecorderIP', '10.3.6.132')
 
-    event.sender.send('getPreferences', settings.getSync())
+  checkNewSettings('client', '')
+  checkNewSettings('resultsToSkip', 0)
+  checkNewSettings('searchMode', 'EarliestFirst')
+  checkNewSettings('startTime', '20210501000000')
+  checkNewSettings('endTime', '20210531235959')
+  checkNewSettings('outputFormat', 'mp3')
+  checkNewSettings('summary', 'yes')
+  checkNewSettings('overwrite', 'yes')
+  checkNewSettings('downloadDirectory', 'C:\\')
+  checkNewSettings('logLevel', 'INFO')
+  
+  event.sender.send('getPreferences', settings.getSync())
 })
 
 ipcMain.on('openExportOptions', (event) => {
