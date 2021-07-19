@@ -58,10 +58,10 @@ function createReport (filePath, group, startDateTime, headers) {
         fs.access(reportPath, fs.constants.F_OK, (err) => {
             log.info(`File System: ${reportPath} ${err ? 'no existe' : 'existe'}`)
             if (err) {
-                fs.writeFile(reportPath, headers, (err) => {
-                    if (err) {
-                        log.error(`File System: ${err}`)
-                        return err
+                fs.writeFile(reportPath, headers, (error) => {
+                    if (error) {
+                        log.error(`File System: ${error}`)
+                        return error
                     }
                 log.info(`File System: Archivo de reporte creado ${reportPath}`)
                 })
