@@ -3,18 +3,19 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
 const settings = require('electron-settings')
 const path = require('path')
-const { createDatabase, createSchema, getRecordsNoProcesed, 
-        getRecordsNoChecked, getRecordsReadyToDownload, updateRecords 
-      } = require('./databaseEvents')
+const { createDatabase, createSchema } = require('./databaseEvents')
 const devtools = require('./devtools')
 const log = require('electron-log')
 const { beginDownloadCycle, stopDownload} = require('./download-cycle')
+const { loginRecorder } = require('./recorderEvents')
+const { AppInfo } = require('electron-builder')
 
 console.log = log.log
 settings.configure({prettify: true})
 log.transports.file.level = 'info'
 log.transports.file.maxSize = 5242880
 //TODO: log level in setting file.
+let loginWindow = null
 let win = null
 const databaseName = 'MATE.db'
 
@@ -39,36 +40,51 @@ if (!gotTheLock) {
     log.info('Main: Solicitud crear schema')   
     createSchema()
     log.info('Main: Solicitud crear ventana')
+    createWindow()
     createLoginWindow()
   })
 }
 
 if (process.env.NODE_ENV === 'development') {
   devtools.run_dev_tools()
-  log.transports.file.level = 'silly'
+  log.transports.file.level = 'info'
 }
 
 //***********Funciones**************************/
 function createLoginWindow () {
-  const loginWindow = new BrowserWindow({
+  loginWindow = new BrowserWindow({
     width: 420,
-    height: 455,
-    title: 'Login',
+    height: 550,
+    title: 'MATE - Red Box Client | Login',
     center: true,
     parent: win,
     modal: false,
     frame: true,
     autoHideMenuBar: true,
-    show: true,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js')
+    }
   })
   loginWindow.loadURL(path.join(__dirname, './renderer/login.html'))
+
+  loginWindow.once('ready-to-show', () => {
+    const lastLogin = {
+      recorder: settings.getSync('lastRecorderIP'),
+      username: settings.getSync('username'),
+      password: settings.getSync('password')
+    }
+    loginWindow.webContents.send('loadLastLogin', lastLogin)
+    loginWindow.show()
+    
+  })
 }
 
 
 function createWindow () {
   win = new BrowserWindow({
     width: 485,
-    height: 750,
+    height: 670,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: true,
@@ -76,7 +92,7 @@ function createWindow () {
       preload: path.join(__dirname, 'preload.js')
     },
     maximizable: false,
-    show: true,
+    show: false,
     autoHideMenuBar: true,
     icon: path.join(__dirname, 'assets', 'icons', 'logo_small.png')
   })
@@ -88,7 +104,17 @@ function createWindow () {
   log.info('Main: Archivo contenido ventana principal cargado ' + path.join(__dirname, 'renderer/index.html'))
 }
 
+
+
+function saveSettings(loginData){
+  settings.setSync('lastRecorderIP', loginData.recorder)
+  settings.setSync('username', loginData.username)
+  settings.setSync('password', loginData.password)
+}
+
+//************************************************* */
 //*******************EVENTOS ********************** */
+//************************************************* */
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -98,6 +124,33 @@ app.on('window-all-closed', () => {
 })
 
 
+// ............. Login Event ...................
+ipcMain.on('login', async (event, loginData) => {
+
+  if(loginData.saveData) {
+    saveSettings(loginData)
+  }
+
+  const login = await loginRecorder(loginData.recorder, loginData.username, loginData.password)
+
+  log.info('Main: Validando login')
+  if (login.hasOwnProperty('authToken')) {
+    log.info('Main: Login OK')
+    loginWindow.hide()
+    win.show()
+    
+  } else if (login.hasOwnProperty('error')) {
+    log.error('Main: Login Error ' + login.error)
+    event.sender.send('loginAlert', login.error )
+  }
+  else {
+    log.error('Main: Login Error: ' + login.type + ' ' + login.errno)
+    event.sender.send('loginAlert', login.type + ' ' + login.errno)
+  }
+
+})
+
+//..............Open Directory Event ...................
 ipcMain.on('openDir', (event) => {
   const { dialog } = require('electron');
   let dialogOptions = {
@@ -117,7 +170,7 @@ ipcMain.on('openDir', (event) => {
   }).catch(err => log.error('Main: Handle Error ',err))
 })
 
-
+// ...............Load Preferences Event .................
 ipcMain.on('loadPreferences', (event) => {
   log.info('Main: DOM content loaded')
     
@@ -135,14 +188,14 @@ ipcMain.on('loadPreferences', (event) => {
   // checkNewSettings('lastRecorderIP', '192.168.221.128')
 
   //EMTELCO settings
-  checkNewSettings('username', 'descargas')
-  checkNewSettings('password', 'descargas')
-  checkNewSettings('lastRecorderIP', '10.3.6.132')
+  // checkNewSettings('username', 'descargas')
+  // checkNewSettings('password', 'descargas')
+  // checkNewSettings('lastRecorderIP', '10.3.6.132')
 
   checkNewSettings('client', '')
   checkNewSettings('resultsToSkip', 0)
   checkNewSettings('searchMode', 'EarliestFirst')
-  checkNewSettings('startTime', '20210501000000')
+  checkNewSettings('startTime', '20210531000000')
   checkNewSettings('endTime', '20210531235959')
   checkNewSettings('outputFormat', 'mp3')
   checkNewSettings('summary', 'yes')
@@ -153,6 +206,7 @@ ipcMain.on('loadPreferences', (event) => {
   event.sender.send('getPreferences', settings.getSync())
 })
 
+//............. Open Export Options Window ...............
 ipcMain.on('openExportOptions', (event) => {
   const exportOptionsWindow = new BrowserWindow({
     width: 530,

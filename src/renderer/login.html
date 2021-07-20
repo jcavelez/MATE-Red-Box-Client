@@ -11,7 +11,7 @@
     <link href="../../node_modules/xel-fonts/fonts.css" rel="stylesheet"></link>
     <link rel="stylesheet" href="../assets/styles/login.css">
     <script src="../../node_modules/xel/xel.js" type="module"></script>
-    <title>Login</title>
+    <title>MATE - Red Box Client | Login</title>
 </head>
 <body>
     <header></header>
@@ -21,29 +21,36 @@
             <img class="title-logo" src="../assets/img/logo_small.PNG" alt="" srcset="">
         </x-box>
 
-        <x-box class="form">
+        <form class="form" method="post">
+            <x-box class="form-recorder">
+                <x-label class="recorder-label">Grabadora:</x-label>
+                <x-input class="recorder-input" id="recorder" type="text" minlength="7" maxlength="15" size="15" pattern="^(?:(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])(\.(?!$)|$)){4}$" required></x-input>
+            </x-box>
             <x-box class="form-username">
-                <x-label class="username-label">Usuario:</x-label>
-                <x-input class="username-input"></x-input>
+                <x-label class="username-label" for="username">Usuario:</x-label>
+                <x-input class="username-input" id="username" required></x-input>
             </x-box>
             <x-box class="form-password">
-                <x-label class="password-label">Contraseña:</x-label>
-                <x-input class="password-input"></x-input>
+                <x-label class="password-label" for="password">Contraseña:</x-label>
+                <x-input class="password-input" id="password" type="password" required></x-input>
             </x-box>
             <x-box class="form-remember">
-                <x-checkbox class="remember-check" ></x-checkbox>
-                <x-label class="remember-label">Recuerdame</x-label>
+                <x-checkbox class="remember-check" id="remember" aria-toggled="true" toggled disabled></x-checkbox>
+                <x-label class="remember-label" for="remember">Recuerdame</x-label>
             </x-box>
-        </x-box>
 
-
-        <x-box class="buttons">
-            <x-button id="login">Iniciar Sesión</x-button>
-            <!-- <x-button id="exit">Cancelar</x-button> -->
-        </x-box>
-
-
+            <x-box class="buttons">
+                <x-button id="login" type="submit">Iniciar Sesión</x-button>
+            </x-box>
+        </form>
     </main>
+
+    <x-notification id="notification"></x-notification>
+
+    <x-box class="modal" id="modal-loading">
+        <img src="../assets/img/tenor.gif" alt="" width="30px" height="30px">
+    </x-box>
+
     <script src="./login-window/login-window.js"></script>
 </body>
 </html>

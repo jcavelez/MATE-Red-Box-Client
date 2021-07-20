@@ -3,8 +3,8 @@ import { formatStartDate, formatEndDate } from '../../assets/lib/formatDate.js'
 
 let currentToken
 
-
 let options = {}
+
 
 function loadPreferences() {
     window.api.send('loadPreferences')

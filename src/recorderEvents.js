@@ -33,11 +33,11 @@ async function fetchData(method, url, headers, data={}) {
     }
 
     try {
-        log.info(`Fetch: ${method} ${url}`)
+        log.info(`Fetch ${method} ${url}: Iniciando`)
         let response = await fetch(url, options)
-        log.info('Fetch: Respuesta ' + response.status + ' ' + response.statusText)
+        log.info(`Fetch ${method} ${url}: Respuesta ${response.status} ${response.statusText}`)
         let results = await response.json()
-        if (results.hasOwnProperty('error')) log.error(`Fetch:${results.error} `) 
+        if (results.hasOwnProperty('error')) log.error(`Fetch ${method} ${url}: ${results.error} `) 
 
         return results
     } catch (e) {

@@ -6,7 +6,7 @@
   --p-size: 21px;
   --small-size: 16px;
 
-  --black-color: #707070;
+  --black-color: #646464;
   --weight: 300;
 
 }
@@ -22,14 +22,15 @@ header {
 
 main {
     margin: 0px 35px 0 35px;
-    height: 340px;
+    height: 430px;
     border: 1px solid #a8a8a8;
     border-radius: 13px;
     padding: 15px;
+    box-shadow: 0 3px 10px rgb(0 0 0 / 0.2);
 }
 
 .title {
-    height: 100px;
+    height: 110px;
 
     display: flex;
     flex-direction: row;
@@ -53,21 +54,21 @@ main {
     margin-bottom: 20px;
 }
 
-.form-username, .form-password {
+.form-recorder, .form-username, .form-password {
     /* border: 1px solid aqua; */
     flex-direction: column;
     align-items: flex-start;
     /* padding: 0 auto; */
     width: 90%;
-    margin-bottom: 15px;
+    margin: 15px;
 }
 
-.username-label, .password-label {
+.recorder-label, .username-label, .password-label {
     margin-bottom: 8px;
     font-size: var(--small-size);
 }
 
-.username-input, .password-input {
+.recorder-input, .username-input, .password-input {
     max-width: 100%;
     width: 100%;
     height: 30px;
@@ -78,13 +79,17 @@ x-input[computedsize="small"] {
     height: 28px !important
 }
 
+x-input:hover {
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.2);
+}
+
 .form-remember {
     max-width: 100%;
     width: 90%;
     flex-direction: row;
     align-items: flex-end;
     justify-content: flex-end;
-    margin-bottom: 15px;
+    margin-bottom: 34px;
 }
 
 .remember-label {
@@ -99,3 +104,31 @@ x-button {
     height: 34px;
 }
 
+x-button:hover {
+    cursor: pointer;
+    box-shadow: 0 1px 6px rgb(0 0 0 / 0.2);
+}
+
+#notification {
+    color: rgb(245, 245, 245);
+}
+
+.modal { 
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    visibility: hidden;
+    opacity: 0;
+    transition: all 0.35s ease-in;
+  }
+
+  .modal.is-visible {
+    visibility: visible;
+    opacity: 1;
+  }
