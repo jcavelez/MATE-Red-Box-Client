@@ -26,7 +26,7 @@
 
 #download-dialog {
     width: 530px;
-    height: 300px;
+    height: 250px;
     top: 150px;
     border-radius: 10px 10px;
 }
@@ -40,6 +40,10 @@ x-input, input {
     border-radius: var(--border-radius);
     max-width: 99%;
     font-size: 14px;
+}
+
+x-input:hover, input:hover {
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.2);
 }
 
 x-input[type="date"]{
@@ -179,6 +183,10 @@ header {
     margin-top: 35px;
     display: flex;
     justify-content: center;
+}
+
+x-button:hover {
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.2);
 }
 
 

@@ -14,7 +14,7 @@ body {
 .messages-icon {
     width: 100%;
     justify-content: center;
-    margin-top: 30px;
+    padding-top: 15px;
 }
 .messages-main {
     width: 100%;
@@ -22,8 +22,10 @@ body {
 }
 
 .messages-big {
-    color: #444;
+    color: rgb(77, 77, 77);
     font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 6px;
 }
 
 .messages-small {
@@ -35,5 +37,5 @@ body {
 .messages-buttons {
     width: 100%;
     justify-content: center;
-    margin-top: 25px;
+    margin-top: 20px;
 }

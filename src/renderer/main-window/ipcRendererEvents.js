@@ -12,7 +12,6 @@ function loadPreferences() {
 
 function openDir() {
     window.api.send('openDir')
-    console.log('enviado')
 }
 
 function openStatusDialog(ev) {
@@ -35,6 +34,8 @@ function openStatusDialog(ev) {
             isValidPath = true
         } else {
             notify('"Ruta inválida". Por favor verifique la carpeta de descarga sea una ruta válida.')
+            const modal = document.getElementById("download-dialog")
+            modal.close()
         }
     
         return isValidPath
@@ -73,6 +74,7 @@ function openStatusDialog(ev) {
     ev.target.removeEventListener('click', openStatusDialog)
     const valid = validateForm()
     if (valid) {
+        console.log(valid)
         getSearchFields()
         requestStartDownload(options)
     }
@@ -100,6 +102,18 @@ function openExportPreferences(event) {
 function stopDownloadProccess() {
     window.api.send('stop', currentToken)
 }
+
+
+
+function notify (message) {
+    const notification = document.getElementById("notification");
+    notification.innerText = message
+    notification.opened = true
+}
+
+//************************************************* */
+//*******************EVENTOS ********************** */
+//************************************************* */
 
 window.api.receive('recievePath', (data) => {
     document.getElementById('download-section-input').value = data

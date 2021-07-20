@@ -39,8 +39,7 @@ if (!gotTheLock) {
     createDatabase(databaseName) 
     log.info('Main: Solicitud crear schema')   
     createSchema()
-    log.info('Main: Solicitud crear ventana')
-    createWindow()
+    log.info('Main: Cargando ventana de Login')
     createLoginWindow()
   })
 }
@@ -136,8 +135,12 @@ ipcMain.on('login', async (event, loginData) => {
   log.info('Main: Validando login')
   if (login.hasOwnProperty('authToken')) {
     log.info('Main: Login OK')
+    log.info('Main: Cerrando ventana de Login')
     loginWindow.hide()
+    log.info('Main: Cargando ventana principal')
+    createWindow()
     win.show()
+    loginWindow.close()
     
   } else if (login.hasOwnProperty('error')) {
     log.error('Main: Login Error ' + login.error)

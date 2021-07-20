@@ -1,4 +1,4 @@
-import { loadPreferences, openDir, requestStartDownload, openExportPreferences, openStatusDialog, stopDownloadProccess } from './ipcRendererEvents.js'
+import { loadPreferences, openDir, openExportPreferences, openStatusDialog, stopDownloadProccess } from './ipcRendererEvents.js'
 import { validateDate } from '../../assets/lib/validateDate.js'
 
 
@@ -6,7 +6,6 @@ const openDirectoryBtn = document.getElementById('open-directory')
 const downloadBtn = document.getElementById('download-button')
 const exportSettingsBtn = document.getElementById('export-settings-btn')
 const exitBtn = document.getElementById('exit-button')
-const notification = document.getElementById("notification");
 
 const switchEndDate = document.getElementById("switch-end-date")
 const switchExtension = document.getElementById("switch-extension")
@@ -96,14 +95,6 @@ function validateDateInput (evt, error) {
         error.innerText = "Fecha incorrecta";
     }
 }
-
-function notify (message) {
-    notification.innerText = message
-    notification.opened = true
-}
-
-
-
 
 function exit() {
     window.close()
