@@ -6,7 +6,6 @@ const loginBtn = document.getElementById('login')
 const notification = document.getElementById('notification')
 const modal = document.getElementById('modal-loading')
 
-loginBtn.addEventListener('click', sendForm)
 loginBtn.addEventListener('click', () => {
     modal.classList.add('is-visible')
     recorderInput.blur()
@@ -14,6 +13,7 @@ loginBtn.addEventListener('click', () => {
     passwordInput.blur()
     modal.focus()
 })
+loginBtn.addEventListener('click', sendForm)
 
 function sendForm() {
     const loginData = {

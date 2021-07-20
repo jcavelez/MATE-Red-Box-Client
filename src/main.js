@@ -69,9 +69,9 @@ function createLoginWindow () {
 
   loginWindow.once('ready-to-show', () => {
     const lastLogin = {
-      recorder: settings.getSync('lastRecorderIP'),
-      username: settings.getSync('username'),
-      password: settings.getSync('password')
+      recorder: settings.hasSync('lastRecorderIP') ? settings.getSync('lastRecorderIP') : '',
+      username: settings.hasSync('username') ? settings.getSync('username') : '',
+      password: settings.hasSync('password') ? settings.getSync('password') : ''
     }
     loginWindow.webContents.send('loadLastLogin', lastLogin)
     loginWindow.show()
