@@ -52,10 +52,10 @@ async function processCall(callData, token) {
     callData = { ...callData, ...download }
 
     if (download.hasOwnProperty('error')) {
-        if (download.error == 'The authentication token is invalid.') {
-            return download.error
-        }
         log.error(`Worker Download Audio ID ${threadId}: CallID ${callData.callID} ${download.error}`)
+        if (download.error == 'The authentication token is invalid.' || download.error == 'RB_RS_NOT_LICENSED') {
+            return 
+        }
         parentPort.postMessage({
                                 type: 'update',
                                 callID: callID,
