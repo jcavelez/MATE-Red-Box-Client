@@ -242,6 +242,10 @@ ipcMain.on('startDownload', async (event, options) => {
     log.info(`Main: Guardando en settings {'${property}: ${options[property]}}`)
   }
 
+  if (!options.hasOwnProperty('group')) {
+    settings.unsetSync('group')
+  }
+  
   options = settings.getSync()
 
   await beginDownloadCycle(event, options)  

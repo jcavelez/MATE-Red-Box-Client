@@ -77,6 +77,16 @@ async function placeNewSearch(opt) {
         'startTime': opt.startTime,
         'endTime': opt.endTime
     }
+    if (opt.hasOwnProperty('group')) {
+        opts.criteriaList = [
+            {
+                'fieldName': 'AgentGroup',
+                'fieldData': opt.group
+            }
+
+        ]
+        log.info('opts')
+    }
     await fetchData('POST', url, header, opts)
             .then((res) => {
                 log.info('Search: Procesando busqueda.')

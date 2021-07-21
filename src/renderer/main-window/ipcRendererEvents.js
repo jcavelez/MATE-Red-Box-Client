@@ -19,6 +19,8 @@ function openStatusDialog(ev) {
     const startHourInput = document.getElementById('start-hour')
     const endDateInput = document.getElementById('end-date')
     const endHourInput = document.getElementById('end-hour')
+    const groupInput = document.getElementById('input-group')
+    const groupSwitch = document.getElementById('switch-group')
 
     const validatePath = () =>{
 
@@ -44,6 +46,9 @@ function openStatusDialog(ev) {
     const getSearchFields =() => {
         options.startTime = formatStartDate(startDateInput.value, startHourInput.value)
         options.endTime = formatEndDate(endDateInput.value, endHourInput.value)
+        if (groupSwitch.toggled) {
+            options.group = groupInput.value
+        }
     }
     
     const checkDates = () => {
