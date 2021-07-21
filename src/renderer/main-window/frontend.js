@@ -29,9 +29,9 @@ function addEvents() {
         ev['target'].value = ''
     }
 
-    switchGroup.addEventListener('toggle', toggleBox)
-    switchExtension.addEventListener('toggle', toggleBox)
     switchEndDate.addEventListener('toggle', toggleBox)
+    switchExtension.addEventListener('toggle', toggleBox)
+    switchGroup.addEventListener('toggle', toggleBox)
 
     startDateInput.addEventListener('click', clear)
     startHourInput.addEventListener('click', clear)
@@ -76,7 +76,7 @@ function disableChildren(node) {
     if (children) {
         children.forEach(element => {
             if (element.tagName != 'X-SWITCH' ) {
-                this.disableChildren(element)
+                disableChildren(element)
             }
         })
     }
