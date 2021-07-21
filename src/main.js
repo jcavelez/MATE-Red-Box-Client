@@ -8,7 +8,6 @@ const devtools = require('./devtools')
 const log = require('electron-log')
 const { beginDownloadCycle, stopDownload} = require('./download-cycle')
 const { loginRecorder } = require('./recorderEvents')
-const { AppInfo } = require('electron-builder')
 
 console.log = log.log
 settings.configure({prettify: true})

@@ -74,18 +74,22 @@ function createReport (filePath, group, startDateTime, headers) {
 }
 
 function saveReport(file, data) {
-    fs.access(file, fs.constants.F_OK, (err) => {
-        log.info(`File System: ${file} ${err ? 'sin acceso' : 'accedido'}`)
-        if (!err) {
-            fs.appendFileSync(file, data, (e) => {
-                if (e) {
-                    log.error(`File System: Error abriendo archivo ${err}`)
-                } else {
-                    log.info(`File System: Archivo correctamente ${file}`)
-                }
-            })
-        }
-    })
+    try {
+        fs.access(file, fs.constants.F_OK, (err) => {
+            log.info(`File System: ${file} ${err ? 'sin acceso' : 'accedido'}`)
+            if (!err) {
+                fs.appendFileSync(file, data, (e) => {
+                    if (e) {
+                        log.error(`File System: Error abriendo archivo ${err}`)
+                    } else {
+                        log.info(`File System: Archivo correctamente ${file}`)
+                    }
+                })
+            }
+        })
+    } catch (exception) {
+        log.error(`File System: ${exception}`)
+    }
 }
 
 module.exports = { createNewFileName, createReport, saveReport }

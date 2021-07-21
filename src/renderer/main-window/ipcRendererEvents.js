@@ -74,7 +74,6 @@ function openStatusDialog(ev) {
     ev.target.removeEventListener('click', openStatusDialog)
     const valid = validateForm()
     if (valid) {
-        console.log(valid)
         getSearchFields()
         requestStartDownload(options)
     }
