@@ -9,12 +9,12 @@ function createNewFileName (callData, ext) {
     hour = hour + '-' + callData.StartDateTime.split(' ')[2]
     let newName = 
         callData.Extension + '_' +
-        callData.OtherParty + '_' +
+        //callData.OtherParty + '_' +
         callData.AgentGroup + '_' +
         date[1] + '-' + date[0] + '-' + date[2] + '_' +
-        hour + '_' +
-        callData.ExternalCallID + '_' +
-        callData.RBRCallGUID + '_'
+        hour + '_' //+
+        //callData.ExternalCallID + '_' +
+        //callData.RBRCallGUID + '_'
     const dir = path.dirname(callData.ruta)
     const subdir = subfolderName(callData)
     const newDir = path.join(dir, subdir)
