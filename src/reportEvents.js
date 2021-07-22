@@ -31,6 +31,7 @@ function subfolderName(callData) {
     subdirForFile.push(date[2])
     subdirForFile.push(zeroFill(date[0], 2))
     subdirForFile.push(zeroFill(date[1], 2))
+    subdirForFile.push(callData.Extension)
 
     return subdirForFile.join('\\')
 }
