@@ -200,8 +200,9 @@ ipcMain.on('loadPreferences', (event) => {
   checkNewSettings('startTime', '20210531000000')
   checkNewSettings('endTime', '20210531235959')
   checkNewSettings('outputFormat', 'mp3')
-  checkNewSettings('summary', 'yes')
+  checkNewSettings('report', 'no')
   checkNewSettings('overwrite', 'yes')
+  checkNewSettings('parallelDownloads', '2')
   checkNewSettings('downloadDirectory', 'C:\\')
   checkNewSettings('logLevel', 'INFO')
   

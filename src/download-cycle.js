@@ -13,7 +13,7 @@ let downloadRunning = false
 let login = {}
 let workers = []
 
-const MAX_DOWNLOAD_WORKERS = 2
+let MAX_DOWNLOAD_WORKERS = 1
 
 
 const beginDownloadCycle = async (event, options) => {
@@ -21,6 +21,8 @@ const beginDownloadCycle = async (event, options) => {
   const username = options.username
   const password = options.password
   const client = options.client
+
+  MAX_DOWNLOAD_WORKERS = options.parallelDownloads
 
   await getToken(recorderIP, username, password)
   if (await checkToken(event)) {
@@ -133,6 +135,7 @@ const specialClientChecks = async (client) => {
 const download = async (event, options) => {
   event.sender.send('recorderDownloading')
   let queryFails = counter()
+  log.info(`Main: Descargas paralelas: ${MAX_DOWNLOAD_WORKERS}`)
   
   for (let i = 0; i < MAX_DOWNLOAD_WORKERS; i++) {
     log.info('Main: Creando nuevo worker.')

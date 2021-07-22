@@ -110,13 +110,13 @@ async function postDownloadTasks(callID, callData) {
                         })
                         
                     }
-        const headers = Object.keys(callData).join(',') + '\n'
-        const reportFile = await createReport(ruta, AgentGroup, StartDateTime, headers)
-
-        const values = Object.values(callData).join(',') + '\n'
-        saveReport(reportFile, values)
-
-        log.info(`PostDownloadTasks: CallID ${callID} - Reporte guardado.`)
+        if (downloadOptions.report === 'yes') {
+            const headers = Object.keys(callData).join(',') + '\n'
+            const reportFile = await createReport(ruta, AgentGroup, StartDateTime, headers)
+            const values = Object.values(callData).join(',') + '\n'
+            saveReport(reportFile, values)
+            log.info(`PostDownloadTasks: CallID ${callID} - Reporte guardado.`)
+        }
     }
 
     log.info(`PostDownloadTasks: CallID ${callID} - Solicitando actualizacion en BD.`)
