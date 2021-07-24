@@ -3,7 +3,7 @@ const path = require('path')
 const sleep = require('./sleep.js')
 const counter = require('./assets/lib/counter.js')
 const { ExternalCallIDCheck }= require('./assets/lib/EMTELCO.js')
-const { loginRecorder, logoutRecorder } = require('./recorderEvents.js')
+const { logoutRecorder } = require('./recorderEvents.js')
 const { search } = require('./recorderEvents.js')
 const { getRecordsNoProcesed, getRecordsNoChecked, getRecordsReadyToDownload, updateRecords 
 } = require('./databaseEvents')
@@ -11,7 +11,6 @@ const { Worker } = require('worker_threads')
 
 
 let downloadRunning = false
-let login = {}
 let workers = []
 let loginWorker = null
 let currentToken = null
@@ -227,9 +226,10 @@ const download = async (event, options) => {
 }
 
 
-const stopDownload = async (event, IP) => {
+const stopDownload = async (event) => {
   log.info(`Main: Senal stop recibida. Eliminando procesos`)
   //time added to wait transcoding and report finished
+  event.sender.send('queryFinished')
   await sleep(10000)
 
   workers.forEach(worker => {
@@ -239,9 +239,11 @@ const stopDownload = async (event, IP) => {
   workers = []
   downloadRunning = false
   
-  logoutRecorder(IP, currentToken)
-  event.sender.send('queryFinished')
+}
+
+const logout = async (IP) => {
+  await logoutRecorder(IP, currentToken)
 }
 
  
-module.exports = { beginDownloadCycle, stopDownload, runLoginEvent }
+module.exports = { beginDownloadCycle, stopDownload, runLoginEvent, logout }

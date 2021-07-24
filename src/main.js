@@ -7,7 +7,7 @@ const path = require('path')
 const { createDatabase, createSchema } = require('./databaseEvents')
 const devtools = require('./devtools')
 const log = require('electron-log')
-const { runLoginEvent, beginDownloadCycle, stopDownload} = require('./download-cycle')
+const { runLoginEvent, beginDownloadCycle, stopDownload, logout} = require('./download-cycle')
 const sleep = require('./sleep')
 
 console.log = log.log
@@ -118,7 +118,9 @@ function saveLoginData(loginData){
 //*******************EVENTOS ********************** */
 //************************************************* */
 
-app.on('window-all-closed', () => {
+app.on('window-all-closed', async () => {
+  log.info('Main: logging out')
+  await logout(settings.getSync('lastRecorderIP'))
   if (process.platform !== 'darwin') {
     log.info('Main: Cerrando ventana')
     app.quit()
@@ -227,8 +229,8 @@ ipcMain.on('openExportOptions', (event) => {
 ipcMain.on('startDownload', async (event, options) => {
   log.info('Main: Senal de inicio de busqueda recibida')
   
-  //Se guarda la info recibida de la web en los settings de electron para cargarlos la 
-  //proxima vez que se abra la aplicación.
+  //Se guarda la info recibida de la web en los settings de electron para cargarlos 
+  //la proxima vez que se abra la aplicación.
   log.info('Main: Guardando parametros de busqueda')
   for (const property in options) {
     settings.setSync(property, options[property])

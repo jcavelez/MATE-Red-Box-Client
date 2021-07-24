@@ -104,9 +104,8 @@ function openExportPreferences(event) {
 }
 
 function stopDownloadProccess() {
-    window.api.send('stop', currentToken)
+    window.api.send('stop')
 }
-
 
 
 function notify (message) {
