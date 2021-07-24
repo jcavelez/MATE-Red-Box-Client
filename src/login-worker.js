@@ -30,7 +30,7 @@ parentPort.on('message', async (msg) => {
     if (msg.type === 'updateCredentials') {
       log.info('Worker Login: Actualizando credenciales')
       log.info('Worker Login: Verificando sesion abierta')
-      if (currentToken == null) {
+      if (currentToken != null) {
         log.info('Worker Login: Cerrando sesion abierta')
         const res = await logout()
         log.info('Worker Login: Cerrando sesion abierta' + res)

@@ -8,26 +8,16 @@ const { logoutRecorder } = require('./recorderEvents.js')
 log.info(`Worker Download Details: Creado`)
 
 const IP = workerData.options.lastRecorderIP
-const username = workerData.options.username
-const password = workerData.options.password
-let token
+let token = workerData.options.token
 
 parentPort.on('message', (msg) => {
     if (msg.type == 'call') {
         processCall(msg.callID)
-    } else if (msg.type == 'finish') {
-        logoutRecorder(IP, token)
     }
-});
+})
 
-(async () => {
-    const login = await loginRecorder(IP, username, password)
-    if (await checkToken(login)) {
-        log.info(`Worker Download Details: Solicitando nuevo Call ID`)
-        token = login.authToken 
-        parentPort.postMessage({type: 'next'})
-    }
-})()
+
+parentPort.postMessage({type: 'next'})
 
 async function processCall(callID) {
     log.info(`Worker Download Details: Inicio procesamiento CallID ${callID}`)
@@ -65,16 +55,3 @@ async function processCall(callID) {
     
 }
 
-const checkToken = async (login) => {
-    if (login.hasOwnProperty('authToken')) {
-        log.info(`Worker Download Details: Login exitoso`)
-        return true
-    }
-    else if (login.hasOwnProperty('error')) {
-        return false
-    }
-    else {
-        log.error(`Worker Download Audio ID: Login fallido ${login.type} - ${login.errno}`)
-        return false
-    }
-}

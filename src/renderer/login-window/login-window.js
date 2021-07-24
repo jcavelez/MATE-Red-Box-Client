@@ -47,9 +47,13 @@ window.api.receive('loadLastLogin', (loginData) => {
     passwordInput.value = loginData.password
 })
 
-window.api.receive('loginAlert', (loginError) => {
+window.api.receive('loginAlert', (msg) => {
     modal.classList.remove('is-visible')
-    notification.innerHTML = 'Error: ' + loginError
+    notification.innerHTML = msg
     notification.opened = true
+    
+    if(msg === 'Login exitoso') {
+        window.api.send('openMainWindow')
+    }
     
 })

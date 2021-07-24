@@ -152,7 +152,6 @@ window.api.receive('getPreferences', (prefs) => {
                                                 prefs.endTime.substring(10,12)
 })
 
-window.api.receive('newToken', (token) => currentToken = token)
 
 window.api.receive('recorderSearching', () => {
     console.log('Buscando')

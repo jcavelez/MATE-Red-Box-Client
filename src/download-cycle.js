@@ -9,42 +9,125 @@ const { getRecordsNoProcesed, getRecordsNoChecked, getRecordsReadyToDownload, up
 } = require('./databaseEvents')
 const { Worker } = require('worker_threads')
 
+
 let downloadRunning = false
 let login = {}
 let workers = []
+let loginWorker = null
+let currentToken = null
+let loginError = null
 
 let MAX_DOWNLOAD_WORKERS = 1
 
+async function runLoginEvent(event, loginData) {
+  currentToken = null
+  loginError = null
 
-const beginDownloadCycle = async (event, options) => {
-  const client = options.client
 
-  MAX_DOWNLOAD_WORKERS = options.parallelDownloads
+  if (loginWorker == null) {
+    loginWorker = createLoginProcess(loginData.recorder, loginData.username, loginData.password)
+  } else {
+    updateCredentials(loginData.recorder, loginData.username, loginData.password)
+  }
+  await updateToken()
 
-  
-  downloadRunning = true
-  
-  //await beginSearch(options)
-  //getDetails(options)
-  //await sleep(3000)
-  //specialClientChecks(client)
-  //download(event, options)
+  log.info('Main: Validando login')
 
-  
+  if (currentToken != null) {
+    log.info('Main: Login OK')
+    
+    //TODO: envio mensaje a ipcrenderer porque desde este modulo no se puede importar
+    event.sender.send('loginAlert', 'Login exitoso')
+  } 
+  else {
+    event.sender.send('loginAlert', loginError)
+  }
+}
+
+function createLoginProcess (recorderIP, username, password) {
+  log.info('Main: Creando login worker.')
+
+  const workerURL = `${path.join(__dirname, 'login-worker.js')}`
+  const data = {
+                workerData: {
+                              options: {
+                                recorderIP: recorderIP,
+                                username: username,
+                                password: password
+                              }
+                            }
+                }
+  let worker = new Worker(workerURL, data) 
+
+  worker.on('message', (msg) => {
+    log.info(`Main: Mensaje recibido de Login Worker `)
+    log.info(msg)
+    if(msg.type === 'token') {
+      currentToken = msg.data
+    }
+
+    if (msg.type === 'error') {
+      currentToken = null
+      loginError = msg.data
+    }
+  })
+
+  return worker
+}
+
+async function updateToken() {
+  try {
+    log.info(`Main: Actualizando token`)
+    loginWorker.postMessage({type: 'getToken'})
+    //esperamos hasta que tengamos el token o un error
+    await sleep(500)
+    while (currentToken == null && loginError == null) {
+      loginWorker.postMessage({type: 'getToken'})
+      await sleep(2000)
+    }
+    return
+  } catch (e) {
+    log.error(`Main: Error actualizando Token ${e}`)
+  }
+}
+
+function updateCredentials(recorderIP, username, password) {
+  const data = {
+      recorderIP: recorderIP,
+      username: username,
+      password: password
+  }
+  loginWorker.postMessage({type: 'updateCredentials', data: data})
 }
 
 
+const beginDownloadCycle = async (event, options) => {
+  log.info(`Main: Iniciando busqueda`)
+  const client = options.client
+
+  MAX_DOWNLOAD_WORKERS = options.parallelDownloads
+  
+  downloadRunning = true
+  event.sender.send('recorderSearching')
+  await beginSearch(options)
+  getDetails(options)
+  await sleep(500)
+  specialClientChecks(client)
+  event.sender.send('recorderDownloading')
+  download(event, options)
+}
 
 
 const beginSearch = async (options) => {
   log.info('Main: solicitud busqueda')
-  let nResults =  await search(options, login.authToken)
+  let nResults =  await search(options, currentToken)
   log.info(`Main: ${nResults} resultados recibidos`)
 }
 
 const getDetails = async (options) => {
   try {
     log.info('Main: Creando details worker.')
+    options.token = currentToken
     const workerURL = `${path.join(__dirname, 'details-worker.js')}`
     const data = {
                   workerData: {
@@ -79,6 +162,7 @@ const getDetails = async (options) => {
 }
 
 const specialClientChecks = async (client) => {
+  log.info(`Main: Buscando funciones especiales para cliente ${client}`)
     
   try {
     
@@ -86,7 +170,6 @@ const specialClientChecks = async (client) => {
       log.info(`Client Checks: EMTELCO`)
 
       //downloadRunning modificado a false en stop search
-      await sleep(1000)
       while (downloadRunning) {
         let call = getRecordsNoChecked(1)[0]
         if (call === undefined) {
@@ -107,13 +190,13 @@ const specialClientChecks = async (client) => {
 }
 
 const download = async (event, options) => {
-  event.sender.send('recorderDownloading')
   let queryFails = counter()
   log.info(`Main: Descargas paralelas: ${MAX_DOWNLOAD_WORKERS}`)
   
   for (let i = 0; i < MAX_DOWNLOAD_WORKERS; i++) {
     log.info('Main: Creando nuevo download worker.')
     const workerURL = `${path.join(__dirname, 'download-worker.js')}`
+    options.token = currentToken
     const data = { workerData: { options } }
     const worker = new Worker(workerURL, data) 
 
@@ -128,7 +211,7 @@ const download = async (event, options) => {
         } catch (e) {
           log.error(`Main: No se encontraron nuevas grabaciones en estado Listo Para Descargar.`)
           queryFails.increment()
-          queryFails.value() >= 5 ? stopDownload(event, options.lastRecorderIP, login.authToken) : worker.postMessage({type: 'wait'})
+          queryFails.value() >= 5 ? stopDownload(event, options.lastRecorderIP) : worker.postMessage({type: 'wait'})
         }
       }
       else if (msg.type === 'update') {
@@ -144,7 +227,7 @@ const download = async (event, options) => {
 }
 
 
-const stopDownload = async (event, IP, token) => {
+const stopDownload = async (event, IP) => {
   log.info(`Main: Senal stop recibida. Eliminando procesos`)
   //time added to wait transcoding and report finished
   await sleep(10000)
@@ -156,9 +239,9 @@ const stopDownload = async (event, IP, token) => {
   workers = []
   downloadRunning = false
   
-  logoutRecorder(IP, token)
+  logoutRecorder(IP, currentToken)
   event.sender.send('queryFinished')
 }
 
  
-module.exports = { beginDownloadCycle, stopDownload }
+module.exports = { beginDownloadCycle, stopDownload, runLoginEvent }
