@@ -17,50 +17,24 @@ let MAX_DOWNLOAD_WORKERS = 1
 
 
 const beginDownloadCycle = async (event, options) => {
-  const recorderIP = options.lastRecorderIP
-  const username = options.username
-  const password = options.password
   const client = options.client
 
   MAX_DOWNLOAD_WORKERS = options.parallelDownloads
 
-  await getToken(recorderIP, username, password)
-  if (await checkToken(event)) {
-    downloadRunning = true
-    await beginSearch(options)
-    await logoutRecorder(recorderIP, login.authToken)
+  
+  downloadRunning = true
+  
+  //await beginSearch(options)
+  //getDetails(options)
+  //await sleep(3000)
+  //specialClientChecks(client)
+  //download(event, options)
 
-    getDetails(options)
-    await sleep(3000)
-    specialClientChecks(client)
-    download(event, options)
-  }
+  
 }
 
-const getToken = async (recorderIP, username, password) => {
-  log.info('Main: Solicitud login ' + recorderIP)
-  login = await loginRecorder(recorderIP, username, password)
-}
 
-const checkToken = async (event) => {
-  if (login.hasOwnProperty('authToken')) {
-    log.info('Main: Validando login OK')
-    await sleep(1000)
-    event.sender.send('newToken', login.authToken)
-    event.sender.send('recorderSearching')
-    return true
-  } else if (login.hasOwnProperty('error')) {
-    log.error('Main: Validando login Error ' + login.error)
-    await sleep(1000)
-    event.sender.send('recorderLoginError', login.error)
-    return false
-  }
-  else {
-    log.error('Main: Validando login Error: ' + login.type + ' ' + login.errno)
-    event.sender.send('recorderLoginError', login.type + ' ' + login.errno )
-    return false
-  }
-}
+
 
 const beginSearch = async (options) => {
   log.info('Main: solicitud busqueda')
@@ -70,7 +44,7 @@ const beginSearch = async (options) => {
 
 const getDetails = async (options) => {
   try {
-    log.info('Main: Creando nuevo worker.')
+    log.info('Main: Creando details worker.')
     const workerURL = `${path.join(__dirname, 'details-worker.js')}`
     const data = {
                   workerData: {
@@ -138,7 +112,7 @@ const download = async (event, options) => {
   log.info(`Main: Descargas paralelas: ${MAX_DOWNLOAD_WORKERS}`)
   
   for (let i = 0; i < MAX_DOWNLOAD_WORKERS; i++) {
-    log.info('Main: Creando nuevo worker.')
+    log.info('Main: Creando nuevo download worker.')
     const workerURL = `${path.join(__dirname, 'download-worker.js')}`
     const data = { workerData: { options } }
     const worker = new Worker(workerURL, data) 

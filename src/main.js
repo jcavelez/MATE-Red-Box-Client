@@ -1,6 +1,7 @@
 'use strict'
 
 const { app, BrowserWindow, ipcMain } = require('electron')
+const { Worker } = require('worker_threads')
 const settings = require('electron-settings')
 const path = require('path')
 const { createDatabase, createSchema } = require('./databaseEvents')
@@ -8,6 +9,7 @@ const devtools = require('./devtools')
 const log = require('electron-log')
 const { beginDownloadCycle, stopDownload} = require('./download-cycle')
 const { loginRecorder } = require('./recorderEvents')
+const sleep = require('./sleep')
 
 console.log = log.log
 settings.configure({prettify: true})
@@ -17,6 +19,9 @@ log.transports.file.maxSize = 5242880
 let loginWindow = null
 let win = null
 const databaseName = 'MATE.db'
+let loginWorker = null
+let currentToken = null
+let loginError = null
 
 
 //asegurar que la aplicacion corra en una unica instancia
@@ -103,11 +108,68 @@ function createWindow () {
 }
 
 
-
 function saveSettings(loginData){
   settings.setSync('lastRecorderIP', loginData.recorder)
   settings.setSync('username', loginData.username)
   settings.setSync('password', loginData.password)
+}
+
+
+function createLoginProcess (recorderIP, username, password) {
+  log.info('Main: Creando login worker.')
+
+  const workerURL = `${path.join(__dirname, 'login-worker.js')}`
+  const data = {
+                workerData: {
+                              options: {
+                                recorderIP: recorderIP,
+                                username: username,
+                                password: password
+                              }
+                            }
+                }
+  let worker = new Worker(workerURL, data) 
+
+  worker.on('message', (msg) => {
+    log.info(`Main: Mensaje recibido de Login Worker `)
+    log.info(msg)
+    if(msg.type === 'token') {
+      currentToken = msg.data
+    }
+
+    if (msg.type === 'error') {
+      currentToken = null
+      loginError = msg.data
+    }
+  })
+
+  return worker
+}
+
+
+async function updateToken() {
+  try {
+    log.info(`Main: Actualizando token`)
+    loginWorker.postMessage({type: 'getToken'})
+    //esperamos hasta que tengamos el token o un error
+    await sleep(500)
+    while (currentToken == null && loginError == null) {
+      loginWorker.postMessage({type: 'getToken'})
+      await sleep(2000)
+    }
+    return
+  } catch (e) {
+    log.error(`Main: Error actualizando Token ${e}`)
+  }
+}
+
+function updateCredentials(recorderIP, username, password) {
+  const data = {
+      recorderIP: recorderIP,
+      username: username,
+      password: password
+  }
+  loginWorker.postMessage({type: 'updateCredentials', data: data})
 }
 
 //************************************************* */
@@ -122,17 +184,26 @@ app.on('window-all-closed', () => {
 })
 
 
-// ............. Login Event ...................
+// ............. Login Event ....................................
 ipcMain.on('login', async (event, loginData) => {
+
+  currentToken = null
+  loginError = null
 
   if(loginData.saveData) {
     saveSettings(loginData)
   }
 
-  const login = await loginRecorder(loginData.recorder, loginData.username, loginData.password)
+  if (loginWorker == null) {
+    loginWorker = createLoginProcess(loginData.recorder, loginData.username, loginData.password)
+  } else {
+    updateCredentials(loginData.recorder, loginData.username, loginData.password)
+  }
+  await updateToken()
 
   log.info('Main: Validando login')
-  if (login.hasOwnProperty('authToken')) {
+
+  if (currentToken != null) {
     log.info('Main: Login OK')
     log.info('Main: Cerrando ventana de Login')
     loginWindow.hide()
@@ -141,13 +212,9 @@ ipcMain.on('login', async (event, loginData) => {
     win.show()
     loginWindow.close()
     
-  } else if (login.hasOwnProperty('error')) {
-    log.error('Main: Login Error ' + login.error)
-    event.sender.send('loginAlert', login.error )
-  }
+  } 
   else {
-    log.error('Main: Login Error: ' + login.type + ' ' + login.errno)
-    event.sender.send('loginAlert', login.type + ' ' + login.errno)
+    event.sender.send('loginAlert', loginError)
   }
 
 })
