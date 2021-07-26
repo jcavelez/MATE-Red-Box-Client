@@ -1,8 +1,6 @@
 import { validateDate } from '../../assets/lib/validateDate.js'
 import { formatStartDate, formatEndDate } from '../../assets/lib/formatDate.js'
 
-let currentToken
-
 let options = {}
 
 
@@ -168,8 +166,8 @@ window.api.receive('recorderDownloading', () => {
     const m1 = document.getElementById("messages-big")
     const m2 = document.getElementById("messages-small")
     gif.src = "../assets/img/downloading.gif"
-    m1.innerHTML = 'Descarga de audios en curso'
-    m2.innerHTML = 'Por favor espere'
+    m1.innerHTML = 'Descarga de Audios en Curso'
+    m2.innerHTML = 'por favor espere'
 })
 
 window.api.receive('recorderLoginError', (error) => {
@@ -179,10 +177,20 @@ window.api.receive('recorderLoginError', (error) => {
     const m2 = document.getElementById("messages-small")
     const btn = document.getElementById("stop-btn")
     gif.src = "../assets/img/error-connection.png"
-    m1.innerHTML = 'Error de comunicación con el grabador'
+    m1.innerHTML = 'Error de Comunicación con el Grabador'
     m2.innerHTML = error
     btn.innerHTML = 'Cerrar'
 
+})
+
+window.api.receive('finishing', () => {
+    console.log('finishing')
+    const gif = document.getElementById("gif")
+    const m1 = document.getElementById("messages-big")
+    const m2 = document.getElementById("messages-small")
+    gif.src = "../assets/img/finishing.png"
+    m1.innerHTML = 'Descarga Finalizada'
+    m2.innerHTML = 'verificando estado de la aplicación'
 })
 
 window.api.receive('queryFinished', () => {

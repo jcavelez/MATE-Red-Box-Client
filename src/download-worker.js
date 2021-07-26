@@ -35,9 +35,9 @@ async function processCall(callData) {
 
     if (download.hasOwnProperty('error')) {
         log.error(`Worker Download Audio ID ${threadId}: CallID ${callData.callID} ${download.error}`)
-        if (download.error == 'The authentication token is invalid.' || download.error == 'RB_RS_NOT_LICENSED') {
-            return 
-        }
+        // if (download.error == 'The authentication token is invalid.' || download.error == 'RB_RS_NOT_LICENSED') {
+        //     return 
+        // }
         parentPort.postMessage({
                                 type: 'update',
                                 callID: callID,
@@ -72,7 +72,7 @@ async function postDownloadTasks(callID, callData) {
     const outputFormat = downloadOptions.outputFormat
     let ruta = callData.ruta
     const overwrite = downloadOptions.overwrite
-    const AgentGroup = callData.AgentGroup
+    //const AgentGroup = callData.AgentGroup
     const StartDateTime = callData.StartDateTime
 
     if (callData.idEstado === 3) {
@@ -94,7 +94,7 @@ async function postDownloadTasks(callID, callData) {
                     }
         if (downloadOptions.report === 'yes') {
             const headers = Object.keys(callData).join(',') + '\n'
-            const reportFile = await createReport(ruta, AgentGroup, StartDateTime, headers)
+            const reportFile = await createReport(ruta, StartDateTime, headers)
             const values = Object.values(callData).join(',') + '\n'
             saveReport(reportFile, values)
             log.info(`PostDownloadTasks: CallID ${callID} - Reporte guardado.`)

@@ -77,13 +77,13 @@ function createLoginProcess (recorderIP, username, password) {
 async function updateToken() {
   try {
     log.info(`Main: Actualizando token`)
-    loginWorker.postMessage({type: 'getToken'})
+    await sleep(1500)
     //esperamos hasta que tengamos el token o un error
-    await sleep(500)
     while (currentToken == null && loginError == null) {
       loginWorker.postMessage({type: 'getToken'})
       await sleep(2000)
     }
+    log.info(`Main: Token actualizado`)
     return
   } catch (e) {
     log.error(`Main: Error actualizando Token ${e}`)
@@ -99,6 +99,10 @@ function updateCredentials(recorderIP, username, password) {
   loginWorker.postMessage({type: 'updateCredentials', data: data})
 }
 
+function renewToken () {
+  loginWorker.postMessage({type: 'renewToken'})
+}
+
 
 const beginDownloadCycle = async (event, options) => {
   log.info(`Main: Iniciando busqueda`)
@@ -110,8 +114,9 @@ const beginDownloadCycle = async (event, options) => {
   event.sender.send('recorderSearching')
   await beginSearch(options)
   getDetails(options)
-  await sleep(500)
+  await sleep(1000)
   specialClientChecks(client)
+  await(1000)
   event.sender.send('recorderDownloading')
   download(event, options)
 }
@@ -119,8 +124,8 @@ const beginDownloadCycle = async (event, options) => {
 
 const beginSearch = async (options) => {
   log.info('Main: solicitud busqueda')
-  let nResults =  await search(options, currentToken)
-  log.info(`Main: ${nResults} resultados recibidos`)
+  let numResults =  await search(options, currentToken)
+  log.info(`Main: ${numResults} resultados recibidos`)
 }
 
 const getDetails = async (options) => {
@@ -145,7 +150,7 @@ const getDetails = async (options) => {
           log.error(`Main: Termina proceso de descarga de detalles de llamada`)
           worker.postMessage({type: 'finish'})
           await sleep(1000)
-          worker.terminate()
+          worker.unref()
         }
       } else if (msg.type === 'details') {
         log.info(`Main: CallID ${msg.callID}. Detalles de llamada recibidos`)
@@ -208,9 +213,9 @@ const download = async (event, options) => {
           updateRecords({idEstado: 2}, callData.callID)
           worker.postMessage({type: 'call', callData: callData})
         } catch (e) {
-          log.error(`Main: No se encontraron nuevas grabaciones en estado Listo Para Descargar.`)
+          log.error(`Main: No se encontraron nuevos registros en estado 'Listo Para Descargar'.`)
           queryFails.increment()
-          queryFails.value() >= 5 ? stopDownload(event, options.lastRecorderIP) : worker.postMessage({type: 'wait'})
+          queryFails.value() == 5 ? stopDownload(event, options.lastRecorderIP) : worker.postMessage({type: 'wait'})
         }
       }
       else if (msg.type === 'update') {
@@ -227,22 +232,27 @@ const download = async (event, options) => {
 
 
 const stopDownload = async (event) => {
-  log.info(`Main: Senal stop recibida. Eliminando procesos`)
+  log.info(`Main: Senal stop recibida. Eliminando procesos.`)
   //time added to wait transcoding and report finished
+  event.sender.send('finishing')
+  downloadRunning = false
+  await sleep(15000)
   event.sender.send('queryFinished')
-  await sleep(10000)
 
+
+  log.info(`Main: Numero de workers activos:  ${workers.length}`)
+  
   workers.forEach(worker => {
+    log.info(`Main: Eliminando worker ID ${worker.threadId}`)
     worker.terminate()
-    worker.unref()
   })
   workers = []
-  downloadRunning = false
-  
+  renewToken()
 }
 
 const logout = async (IP) => {
   await logoutRecorder(IP, currentToken)
+  
 }
 
  

@@ -119,14 +119,14 @@ function saveLoginData(loginData){
 //************************************************* */
 
 app.on('window-all-closed', async () => {
-  log.info('Main: logging out')
+  log.info('Main: Event window-all-closed')
+  log.info('Main: Logging out')
   await logout(settings.getSync('lastRecorderIP'))
   if (process.platform !== 'darwin') {
-    log.info('Main: Cerrando ventana')
+    log.info('Main: Closing App')
     app.quit()
   }
 })
-
 
 // ............. Login Event ....................................
 ipcMain.on('login', async (event, loginData) => {
@@ -194,7 +194,7 @@ ipcMain.on('loadPreferences', (event) => {
   checkNewSettings('startTime', '20210531000000')
   checkNewSettings('endTime', '20210531235959')
   checkNewSettings('outputFormat', 'mp3')
-  checkNewSettings('report', 'no')
+  checkNewSettings('report', 'yes')
   checkNewSettings('overwrite', 'yes')
   checkNewSettings('parallelDownloads', '2')
   checkNewSettings('downloadDirectory', 'C:\\')
@@ -248,7 +248,7 @@ ipcMain.on('startDownload', async (event, options) => {
 })
 
 
-ipcMain.on('stop', (event, token) => {
+ipcMain.on('stop', (event) => {
   const IP = settings.getSync('lastRecorderIP')
-  stopDownload(event, IP, token)
+  stopDownload(event, IP)
 })

@@ -8,13 +8,13 @@ function createNewFileName (callData, ext) {
     let hour = callData.StartDateTime.split(' ')[1].replaceAll(' ', '_').replaceAll(':', '-')
     hour = hour + '-' + callData.StartDateTime.split(' ')[2]
     let newName = 
-        callData.Extension + '_' +
-        //callData.OtherParty + '_' +
-        callData.AgentGroup + '_' +
-        date[1] + '-' + date[0] + '-' + date[2] + '_' +
-        hour + '_' //+
-        //callData.ExternalCallID + '_' +
-        //callData.RBRCallGUID + '_'
+        callData.Extension 
+        + '_' + callData.OtherParty 
+        + '_' + callData.AgentGroup 
+        + '_' + date[1] + '-' + date[0] + '-' + date[2] 
+        + '_' + hour 
+        + '_' + callData.ExternalCallID 
+        + '_' + callData.RBRCallGUID
     const dir = path.dirname(callData.ruta)
     const subdir = subfolderName(callData)
     const newDir = path.join(dir, subdir)
@@ -26,7 +26,7 @@ function createNewFileName (callData, ext) {
 
 function subfolderName(callData) {
     let subdirForFile = []
-    subdirForFile.push(callData.AgentGroup? callData.AgentGroup : 'NO_GROUP')
+    //subdirForFile.push(callData.AgentGroup? callData.AgentGroup : 'NO_GROUP')
     let date = callData.StartDateTime.split(' ')[0].split('/')
     subdirForFile.push(date[2])
     subdirForFile.push(zeroFill(date[0], 2))
@@ -42,15 +42,13 @@ function makeSubdir(newDir) {
     })
 }
 
-function createReport (filePath, group, startDateTime, headers) {
+function createReport (filePath, startDateTime, headers) {
     log.info('Report: ' + filePath)
     filePath = path.normalize(filePath)
     filePath = filePath.split('\\')
-    if (group === '') {
-        group = 'NO_GROUP'
-    }
-    const groupPosition = filePath.findIndex(element => element === group)
-    let reportFolder = filePath.slice(0, groupPosition + 1).join('\\')
+    
+    //const groupPosition = filePath.findIndex(element => element === group)
+    let reportFolder = filePath.slice(0, -2).join('\\')
     let date = startDateTime.split(' ')[0].split('/')
     let reportName = date[1] + '-' + date[0] + '-' + date[2] + '.csv'
     const reportPath = path.join(reportFolder, reportName)

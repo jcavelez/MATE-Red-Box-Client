@@ -13,6 +13,7 @@ const SEARCH_STATUS_URL = '/api/v1/search/status'
 const SEARCH_RESULTS_URL = '/api/v1/search/results'
 const CALL_AUDIO_URL = '/api/v1/search/callaudio/<callID>'
 const CALL_DETAILS_URL = '/api/v1/search/calldetails/<callID>'
+const KEEP_ALIVE_URL = '/api/v1/sessions/keepAlive'
 
 const SEARCH_STATUS_PENDING =['Requested', 'Initialization', 'Queued', 'SettingUp', 'Executing', 'ReadingResults']
 
@@ -37,7 +38,7 @@ async function fetchData(method, url, headers, data={}) {
         let response = await fetch(url, options)
         log.info(`Fetch ${method} ${url}: Respuesta ${response.status} ${response.statusText}`)
         let results = await response.json()
-        if (results.hasOwnProperty('error')) log.error(`Fetch ${method} ${url}: ${results.error} `) 
+        if (results.hasOwnProperty('error')) log.error(`Fetch ${method} ${url}: ${results.error} `)
 
         return results
     } catch (e) {
@@ -60,6 +61,15 @@ async function loginRecorder(IP, username, password) {
 async function logoutRecorder(IP, token) {
     let url = `${SERVER_URL.replace('<IP>',IP)}${LOGOUT_URL}`
     let dataFetched = await fetchData('POST', url,
+                                    {
+                                        'authToken': token
+                                    })
+    return dataFetched
+}
+
+async function keepAlive(IP, token) {
+    let url = `${SERVER_URL.replace('<IP>',IP)}${KEEP_ALIVE_URL}`
+    let dataFetched = await fetchData('PUT', url,
                                     {
                                         'authToken': token
                                     })
@@ -239,4 +249,5 @@ async function search(downloadOptions, token) {
     return downloadOptions.progress
 }
 
-module.exports = { loginRecorder, search, logoutRecorder, downloadDetails, downloadAudio }
+
+module.exports = { loginRecorder, search, logoutRecorder, downloadDetails, downloadAudio, keepAlive }
