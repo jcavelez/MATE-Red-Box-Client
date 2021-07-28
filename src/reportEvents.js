@@ -29,8 +29,8 @@ function subfolderName(callData) {
     //subdirForFile.push(callData.AgentGroup? callData.AgentGroup : 'NO_GROUP')
     let date = callData.StartDateTime.split(' ')[0].split('/')
     subdirForFile.push(date[2])
-    subdirForFile.push(zeroFill(date[0], 2))
     subdirForFile.push(zeroFill(date[1], 2))
+    subdirForFile.push(zeroFill(date[0], 2))
     subdirForFile.push(callData.Extension)
 
     return subdirForFile.join('\\')

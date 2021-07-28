@@ -121,7 +121,7 @@ const beginDownloadCycle = async (event, options) => {
   
   downloadRunning = true
   event.sender.send('recorderSearching')
-  beginSearch(options)
+  await beginSearch(options)
   await createDetailsWorkers(options)
   await sleep(5000)
   specialClientChecks(client)
@@ -145,17 +145,18 @@ const beginSearch = async (options) => {
     currentEvent.sender.send('searchError', {error: searchStatus.error})
     return
   }
-  log.info(`Main: Busqueda enviada al grabador. 'Results in range: ${options.numberOfResults}'`)
-
+  log.info(`Main: Estado de busqueda recibido del grabador. 'Results in range: ${searchStatus}'`)
+  
   //se considera busqueda incompleta mientras placeNewSearch devuelva 
   //menos de 1000 resultados de acuerdo al API
   while (options.status === 'incomplete') {
+    log.info(`Main: Descargando IDs'`)
     const newSearch = await getResults(options.lastRecorderIP, currentToken)
     if(newSearch) {
+      log.info(`Main: Array de IDs recibido'`)
       options.resultsToSkip += newSearch.length
-      options.progress += newSearch.length
       const IDs = newSearch.map(res => res.callID)
-      log.info('Search: Guardando resultados en BD')
+      log.info('Main: Guardando resultados en BD')
       //ordenando resultados antes de guardarlos
       saveIDs(IDs.sort((a, b) => a - b))
       log.info(`Main: ${IDs.length} IDs guardados en BD`)
@@ -194,6 +195,7 @@ const createDetailsWorkers = async (options) => {
           try {
             const id = getRecordsNoProcesed(1)[0].callID
             log.info(`Main: Details Next ID ${id}`)
+            updateRecords({idEstado: 1}, id)
             worker.postMessage({type: 'call', callID: id})
           } catch (e) {
             log.error(`Main: No se encuentra ningun registro en estado 'No procesado'`)
@@ -262,12 +264,10 @@ const createDownloadWorkers = async (event, options) => {
         try {
           const { ...callData } = getRecordsReadyToDownload(1)[0]
           log.info(`Main: Download Next ID ${callData.callID}`)
-          updateRecords({idEstado: 2}, callData.callID)
+          updateRecords({idEstado: 3}, callData.callID)
           worker.postMessage({type: 'call', callData: callData})
         } catch (e) {
           log.error(`Main: No se encontraron nuevos registros en estado 'Listo Para Descargar'.`)
-          //queryFails.increment()
-          //queryFails.value() ==  MAX_DOWNLOAD_WORKERS * 3? stopDownload(event, options.lastRecorderIP) : worker.postMessage({type: 'wait'})
           if (!downloadRunning) {
             log.info(`Main: Eliminando worker ID ${worker.threadId}`)
             worker.postMessage({type: 'end'})
@@ -300,18 +300,13 @@ async function checkEnding() {
 
 
 const stopDownload = async (event) => {
-  log.info(`Main: Senal stop recibida. Eliminando procesos.`)
+  log.info(`Main: Senal stop recibida. Esperando finalizacion de procesos pendientes.`)
   //time added to wait transcoding and report finished
   downloadRunning = false
   event.sender.send('finishing')
   
   log.info(`Main: Numero de workers creados:  ${workers.length}`)
   
-  workers.forEach(worker => {
-    log.info(`Worker ID ${worker.threadId}`)
-    // log.info(`Main: Eliminando worker ID ${worker.threadId}`)
-    // worker.postMessage({type: 'end'})
-  })
 
   let workersActive = true
 
@@ -320,12 +315,29 @@ const stopDownload = async (event) => {
     if(threadIds.findIndex(id => id != -1) === -1) {
       workersActive = false
     } else {
+      log.info(`Main: Se encontraron procesos pendientes. Esperando 10 segundos.`)
       await sleep(10000)
     }
 
-
-    
   }
+
+  workers = []
+  event.sender.send('queryFinished')
+  //renewToken()
+}
+
+const forceStopProcess = (event) => {
+  log.info(`Main: Senal stop recibida. Forzando la finalizacion de procesos.`)
+  //time added to wait transcoding and report finished
+  downloadRunning = false
+  event.sender.send('finishing')
+  
+  log.info(`Main: Numero de workers creados:  ${workers.length}`)
+  
+  workers.forEach(worker => {
+    log.info(`Main: Eliminando worker ID ${worker.threadId}`)
+    worker.postMessage({type: 'end'})
+  })
 
   workers = []
   event.sender.send('queryFinished')
@@ -338,4 +350,4 @@ const logout = async (IP) => {
 }
 
  
-module.exports = { beginDownloadCycle, stopDownload, runLoginEvent, logout }
+module.exports = { beginDownloadCycle, stopDownload, runLoginEvent, logout, forceStopProcess }

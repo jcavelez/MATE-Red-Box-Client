@@ -5,6 +5,8 @@ const sleep = require('./sleep.js')
 const { loginRecorder, logoutRecorder } = require('./recorderEvents.js')
 const { parentPort, workerData, threadId } = require('worker_threads')
 
+log.info(`Worker Download Audio ID ${threadId}: Creado`)
+
 let downloadOptions = workerData.options
 const IP = downloadOptions.lastRecorderIP
 let username = downloadOptions.username
@@ -19,7 +21,6 @@ let loginError = null;
   }
 )()
 
-log.info(`Worker Download Audio ID ${threadId}: Creado`)
 
 parentPort.on('message', async (msg) => {
     if (msg.type === 'call') {
@@ -27,11 +28,12 @@ parentPort.on('message', async (msg) => {
         if(currentToken) {
             await processCall(msg.callData) 
         } else {
-            log.info(`Worker Download Audio ID ${threadId}:Call ID ${ID} No hay token disponible para la descarga.`)
+            log.info(`Worker Download Audio ID ${threadId}: Call ID ${ID} - No hay token disponible para la descarga.`)
             await login()
-            parentPort.postMessage({type: 'update', callID: ID, callData: {idEstado: 1} })
+            parentPort.postMessage({type: 'update', callID: ID, callData: {idEstado: 2} })
             await sleep(200)
         }
+        log.info(`Worker Download Audio ID ${threadId}: Solicitando otro Call ID para descarga`)
         parentPort.postMessage({type: 'next'}) 
 
     }
@@ -79,16 +81,16 @@ async function processCall(callData) {
     
     const callID = callData.callID
 
-    log.info(`Worker Download Audio ID ${threadId}:CallID ${callData.callID}. Solicitando descarga`)
+    log.info(`Worker Download Audio ID ${threadId}: CallID ${callData.callID} -  Solicitando descarga`)
 
     let { ...download } = await downloadAudio(IP, currentToken, callID, downloadPath)
     
-    log.info(`Worker Download Audio ID ${threadId}:CallID ${callData.callID} Descarga terminada`)
+    log.info(`Worker Download Audio ID ${threadId}: CallID ${callData.callID} - Descarga terminada`)
     
     callData = { ...callData, ...download }
 
     if (download.hasOwnProperty('error')) {
-        log.error(`Worker Download Audio ID ${threadId}: CallID ${callData.callID}. ${download.error}`)
+        log.error(`Worker Download Audio ID ${threadId}: CallID ${callData.callID} - ${download.error}`)
         parentPort.postMessage({
                                 type: 'update',
                                 callID: callID,
@@ -103,7 +105,7 @@ async function processCall(callData) {
         return
     } else {
         //Estado: descargado
-        callData.idEstado = 3
+        callData.idEstado = 4
     }
     
     const newData = {
@@ -121,29 +123,29 @@ async function postDownloadTasks(callID, callData) {
     const { convert } = require('./ffmpegEvents.js')
     const { createNewFileName, createReport, saveReport } = require('./reportEvents.js')
 
-    parentPort.postMessage({type: 'update', callID: callID, callData: {idEstado: 4} })
-
+    
     const outputFormat = downloadOptions.outputFormat
     let ruta = callData.ruta
     const overwrite = downloadOptions.overwrite
     //const AgentGroup = callData.AgentGroup
     const StartDateTime = callData.StartDateTime
-
-    if (callData.idEstado === 3) {
+    
+    if (callData.idEstado === 4) {
         const dstFile = createNewFileName(callData, outputFormat)
         log.info(`PostDownloadTasks: CallID ${callID} - Nuevo nombre ${dstFile}`)
-
+        
         if (downloadOptions.outputFormat != 'wav') {
             log.info(`PostDownloadTasks: CallID ${callID} - Solicitud transcoding.`)
-            callData.idEstado = 4
+            callData.idEstado = 5
+            parentPort.postMessage({type: 'update', callID: callID, callData: {idEstado: 5} })
             await convert(ruta, outputFormat, dstFile, overwrite)
                         .then(() => {
                             ruta = callData.ruta = dstFile
-                            callData.idEstado = 5
+                            callData.idEstado = 6
                         })
                         .catch(() => {
                             log.error(`PostDownloadTasks: CallID ${callID} Promise rejected`)
-                            callData.idEstado = 6
+                            callData.idEstado = 7
                         })
                         
                     }

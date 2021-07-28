@@ -11,7 +11,8 @@ let token = workerData.options.token
 
 parentPort.on('message', async (msg) => {
     if (msg.type == 'call') {
-        processCall(msg.callID)
+        await processCall(msg.callID)
+        parentPort.postMessage({type: 'next'})
     } else if (msg.type === 'wait') {
         await sleep(5000)
         parentPort.postMessage({type: 'next'})
@@ -31,6 +32,7 @@ async function processCall(callID) {
     let {...dets} = await downloadDetails(IP, token, callID)
 
     if (dets.hasOwnProperty('error')) {
+        parentPort.postMessage({type: 'update', callID: ID, callData: {idEstado: 0} })
         return dets.error
     }
 
@@ -51,14 +53,14 @@ async function processCall(callID) {
         AgentGroup: dets.AgentGroup,
         RBRCallGUID: dets.RBRCallGUID,
         ExternalCallID: dets.ExternalCallID,
-        idEstado: 1
+        idEstado: 2
     }
 
     parentPort.postMessage({type: 'details', callID: callID, callData: callData})
     log.info(`Worker Download Details ID ${threadId}: Envido details Call ID ${callID} a main`)
     //tiempo para que guarde data en bd
     await sleep(100)
-    parentPort.postMessage({type: 'next'})
+    
     
 }
 

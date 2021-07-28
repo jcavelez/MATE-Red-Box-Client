@@ -186,9 +186,10 @@ async function downloadAudio(IP, token, callID, savePath) {
     let url = `${SERVER_URL.replace('<IP>', IP)}${CALL_AUDIO_URL.replace('<callID>', callID)}`
     log.info(`Audio: ${options.method} ${url}`)
     let response = await fetch(url, options)
-        .then((res) => {
+        .then(async (res) => {
             log.info(`Audio: CallID ${callID} - Respuesta del grabador recibida`)
-            return res.json()
+            const formatRes = await res.json()
+            return formatRes
         })
         .then(async (res) => {
             if(res.hasOwnProperty('error')) {

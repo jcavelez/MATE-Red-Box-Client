@@ -7,7 +7,7 @@ const path = require('path')
 const { createDatabase, createSchema, saveIDs } = require('./databaseEvents')
 const devtools = require('./devtools')
 const log = require('electron-log')
-const { runLoginEvent, beginDownloadCycle, stopDownload, logout} = require('./download-cycle')
+const { runLoginEvent, beginDownloadCycle, forceStopProcess, logout} = require('./download-cycle')
 const sleep = require('./sleep')
 
 console.log = log.log
@@ -249,5 +249,5 @@ ipcMain.on('startDownload', async (event, options) => {
 
 ipcMain.on('stop', (event) => {
   const IP = settings.getSync('lastRecorderIP')
-  stopDownload(event, IP)
+  forceStopProcess(event, IP)
 })

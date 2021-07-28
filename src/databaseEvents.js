@@ -29,12 +29,13 @@ function createSchema() {
         if (info) {
             const status = [
             [0, 'No Procesado'],
-            [1, 'Listo para descargar'],
-            [2, 'Descargando'],
-            [3, 'Descargado'], 
-            [4, 'Convirtiendo'],
-            [5, 'Convertido'],
-            [6, 'Error']
+            [1, 'Procesando'],
+            [2, 'Listo para descargar'],
+            [3, 'Descargando'],
+            [4, 'Descargado'], 
+            [5, 'Convirtiendo'],
+            [6, 'Convertido'],
+            [7, 'Error']
             ]
             status.forEach(element => {
                 db
@@ -150,7 +151,7 @@ function getRecordsReadyToDownload(top=1) {
     try {
         let query = `SELECT *
                     FROM Grabaciones 
-                    WHERE idEstado = 1
+                    WHERE idEstado = 2
                     
                     ORDER BY
                     callID ASC
@@ -170,7 +171,7 @@ function getRecordsNoChecked(top=1) {
     try {
         let query = `SELECT *
                     FROM Grabaciones 
-                    WHERE idEstado = 1 AND ExternalCallID = ''
+                    WHERE idEstado = 2 AND ExternalCallID = ''
                     LIMIT ${top}`
         
         const select = db.prepare(query)
@@ -240,7 +241,7 @@ function getRPendingRecords() {
     try {
         let query = `SELECT *
                     FROM Grabaciones 
-                    WHERE idEstado = 0 OR idEstado = 1
+                    WHERE idEstado = 0 OR idEstado = 1 OR idEstado = 2
                     LIMIT 1`
         
         const select = db.prepare(query)
