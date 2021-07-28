@@ -2,18 +2,48 @@
 
 const log = require('electron-log')
 const sleep = require('./sleep.js')
+const { loginRecorder, logoutRecorder } = require('./recorderEvents.js')
 const { parentPort, workerData, threadId } = require('worker_threads')
 
 let downloadOptions = workerData.options
-let token = workerData.options.token
+const IP = downloadOptions.lastRecorderIP
+let username = downloadOptions.username
+let password = downloadOptions.password
+const downloadPath = downloadOptions.downloadPath
+let currentToken = null 
+let loginError = null;
+
+(async () => {
+    await login()
+    keepSession()
+  }
+)()
 
 log.info(`Worker Download Audio ID ${threadId}: Creado`)
 
 parentPort.on('message', async (msg) => {
     if (msg.type === 'call') {
-        await processCall(msg.callData) 
+        const ID = msg.callData.callID
+        if(currentToken) {
+            await processCall(msg.callData) 
+        } else {
+            log.info(`Worker Download Audio ID ${threadId}:Call ID ${ID} No hay token disponible para la descarga.`)
+            await login()
+            parentPort.postMessage({type: 'update', callID: ID, callData: {idEstado: 1} })
+            await sleep(200)
+        }
         parentPort.postMessage({type: 'next'}) 
-    } else if (msg.type === 'wait') {
+
+    }
+    
+    else if (msg.type === 'end') {
+        await logout()
+        log.info(`Worker Download Audio ID ${threadId}: Exit`)
+        process.exit(0)
+
+    }
+    
+    else if (msg.type === 'wait') {
         await sleep(10000)
         parentPort.postMessage({type: 'next'})
     }
@@ -21,23 +51,44 @@ parentPort.on('message', async (msg) => {
 
 parentPort.postMessage({type: 'next'})
 
+async function login () {
+    log.info(`Worker Download Audio ID ${threadId}: Solicitud login a ${IP}`)
+    const res = await loginRecorder(IP, username, password)
+    await checkLogin(res)
+}
+
+async function checkLogin (response) {
+    if (response.hasOwnProperty('authToken')) {
+      log.info(`Worker Download Audio ID ${threadId}: Login OK`)
+      currentToken = response.authToken
+      loginError = null
+    } else if (response.hasOwnProperty('error')) {
+      log.error(`Worker Download Audio ID ${threadId}: Validando login Error:  ${response.error}`)
+      currentToken = null
+      loginError = response.error
+    }
+    else {
+      log.error(`Worker Download Audio ID ${threadId}: Validando login Error:  ${response.type} ${response.errno}`)
+      currentToken = null
+      loginError = response.type + ' ' + response.errno
+    }
+  }
+
 async function processCall(callData) {
     const { downloadAudio } = require('./recorderEvents.js')
-    const IP = downloadOptions.lastRecorderIP
+    
     const callID = callData.callID
-    const downloadPath = downloadOptions.downloadPath
 
-    let { ...download } = await downloadAudio(IP, token, callID, downloadPath)
+    log.info(`Worker Download Audio ID ${threadId}:CallID ${callData.callID}. Solicitando descarga`)
 
-    log.info(`Worker Download Audio ID ${threadId}: Descarga terminada`)
+    let { ...download } = await downloadAudio(IP, currentToken, callID, downloadPath)
+    
+    log.info(`Worker Download Audio ID ${threadId}:CallID ${callData.callID} Descarga terminada`)
     
     callData = { ...callData, ...download }
 
     if (download.hasOwnProperty('error')) {
-        log.error(`Worker Download Audio ID ${threadId}: CallID ${callData.callID} ${download.error}`)
-        // if (download.error == 'The authentication token is invalid.' || download.error == 'RB_RS_NOT_LICENSED') {
-        //     return 
-        // }
+        log.error(`Worker Download Audio ID ${threadId}: CallID ${callData.callID}. ${download.error}`)
         parentPort.postMessage({
                                 type: 'update',
                                 callID: callID,
@@ -47,6 +98,7 @@ async function processCall(callData) {
                                             respuestaGrabador: download.error
                                         }
                                 })
+        await sleep(500)
         parentPort.postMessage({type: 'next'})
         return
     } else {
@@ -69,6 +121,8 @@ async function postDownloadTasks(callID, callData) {
     const { convert } = require('./ffmpegEvents.js')
     const { createNewFileName, createReport, saveReport } = require('./reportEvents.js')
 
+    parentPort.postMessage({type: 'update', callID: callID, callData: {idEstado: 4} })
+
     const outputFormat = downloadOptions.outputFormat
     let ruta = callData.ruta
     const overwrite = downloadOptions.overwrite
@@ -89,6 +143,7 @@ async function postDownloadTasks(callID, callData) {
                         })
                         .catch(() => {
                             log.error(`PostDownloadTasks: CallID ${callID} Promise rejected`)
+                            callData.idEstado = 6
                         })
                         
                     }
@@ -101,6 +156,27 @@ async function postDownloadTasks(callID, callData) {
         }
     }
 
-    log.info(`PostDownloadTasks: CallID ${callID} - Solicitando actualizacion en BD.`)
     parentPort.postMessage({type: 'update', callID: callID, callData })
+    log.info(`PostDownloadTasks: CallID ${callID} - Solicitando actualizacion en BD.`)
 }
+
+async function logout () {
+    log.info(`Worker Download Audio ID ${threadId} : Solicitud logout a ${IP}`)
+    const res = await logoutRecorder(IP, currentToken)
+  }
+  
+async function keepSession() {
+
+    while(true) {
+        await sleep(290000)
+        log.info(`Worker Login: Enviando keep alive`)
+        const res = await keepAlive(IP, currentToken)
+
+        if(res.hasOwnProperty('error')) {
+            log.error(`Worker Login: Error ${res.error}`)
+            logout()
+            await login()
+        }
+}
+  
+  }

@@ -2,12 +2,19 @@ const Database = require('better-sqlite3')
 const log = require('electron-log')
 
 let db = null
+const folder = 'C:\\MATE'
 
 function createDatabase (databaseName) {
+    const fs = require('fs')
+    const join = require('path').join
     let options = {
         //verbose: console.log
-      }
-    db = new Database(databaseName, options)
+    }
+    if(!fs.existsSync(folder)) {
+        fs.mkdirSync(folder)
+    }
+    const database = join(folder, databaseName)
+    db = new Database(database, options)
     log.info(`SQLite3: Base de datos creada`)
 }
 
@@ -164,8 +171,6 @@ function getRecordsNoChecked(top=1) {
         let query = `SELECT *
                     FROM Grabaciones 
                     WHERE idEstado = 1 AND ExternalCallID = ''
-                    ORDER BY
-                    callID ASC
                     LIMIT ${top}`
         
         const select = db.prepare(query)
@@ -231,6 +236,26 @@ function getExternalCallID(range, Extension) {
     }
 }
 
+function getRPendingRecords() {
+    try {
+        let query = `SELECT *
+                    FROM Grabaciones 
+                    WHERE idEstado = 0 OR idEstado = 1
+                    LIMIT 1`
+        
+        const select = db.prepare(query)
+        const res = select.all()
+        log.info('SQLite3: Select Query succeeded')
+        return res
+        
+    } catch (error) {
+        log.error(`SQLite3: ${error}`)
+        return 'error'
+    }
+}
+
+
+
 module.exports = {
     createDatabase,
     createSchema,
@@ -239,5 +264,6 @@ module.exports = {
     getRecordsNoChecked,
     getRecordsReadyToDownload,
     updateRecords,
-    getExternalCallID
+    getExternalCallID, 
+    getRPendingRecords
     }

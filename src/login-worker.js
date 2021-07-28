@@ -70,17 +70,13 @@ async function checkLogin (response) {
       log.info(`Worker Login: Login OK`)
       currentToken = response.authToken
       loginError = null
-      //event.sender.send('newToken', login.authToken)
-      //event.sender.send('recorderSearching')
     } else if (response.hasOwnProperty('error')) {
       log.error('Main: Validando login Error ' + response.error)
       currentToken = null
       loginError = response.error
-      //event.sender.send('recorderLoginError', login.error)
     }
     else {
       log.error('Main: Validando login Error: ' + response.type + ' ' + response.errno)
-      //event.sender.send('recorderLoginError', response.type + ' ' + response.errno )
       currentToken = null
       loginError = response.type + ' ' + response.errno
     }

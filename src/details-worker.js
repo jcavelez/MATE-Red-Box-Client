@@ -1,18 +1,22 @@
 'use strict'
 
 const log = require('electron-log')
-const { parentPort, workerData } = require('worker_threads')
-const { loginRecorder } = require('./recorderEvents.js')
-const { logoutRecorder } = require('./recorderEvents.js')
+const { parentPort, workerData, threadId } = require('worker_threads')
+const sleep = require('./sleep.js')
 
-log.info(`Worker Download Details: Creado`)
+log.info(`Worker Download Details ID ${threadId}: Creado`)
 
 const IP = workerData.options.lastRecorderIP
 let token = workerData.options.token
 
-parentPort.on('message', (msg) => {
+parentPort.on('message', async (msg) => {
     if (msg.type == 'call') {
         processCall(msg.callID)
+    } else if (msg.type === 'wait') {
+        await sleep(5000)
+        parentPort.postMessage({type: 'next'})
+    } else if (msg.type === 'end') {
+        process.exit(0)
     }
 })
 
@@ -20,7 +24,7 @@ parentPort.on('message', (msg) => {
 parentPort.postMessage({type: 'next'})
 
 async function processCall(callID) {
-    log.info(`Worker Download Details: Inicio procesamiento CallID ${callID}`)
+    log.info(`Worker Download Details ID ${threadId}: Inicio procesamiento CallID ${callID}`)
     const { downloadDetails } = require('./recorderEvents.js')
     let callData
 
@@ -51,6 +55,9 @@ async function processCall(callID) {
     }
 
     parentPort.postMessage({type: 'details', callID: callID, callData: callData})
+    log.info(`Worker Download Details ID ${threadId}: Envido details Call ID ${callID} a main`)
+    //tiempo para que guarde data en bd
+    await sleep(100)
     parentPort.postMessage({type: 'next'})
     
 }

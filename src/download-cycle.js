@@ -1,11 +1,13 @@
+const { webContents } = require('electron')
 const log = require('electron-log')
 const path = require('path')
 const sleep = require('./sleep.js')
 const counter = require('./assets/lib/counter.js')
 const { ExternalCallIDCheck }= require('./assets/lib/EMTELCO.js')
 const { logoutRecorder } = require('./recorderEvents.js')
-const { search } = require('./recorderEvents.js')
-const { getRecordsNoProcesed, getRecordsNoChecked, getRecordsReadyToDownload, updateRecords 
+const { placeNewSearch } = require('./recorderEvents.js')
+const { getResults } = require('./recorderEvents.js')
+const { getRecordsNoProcesed, getRecordsNoChecked, getRecordsReadyToDownload, updateRecords, getRPendingRecords, saveIDs
 } = require('./databaseEvents')
 const { Worker } = require('worker_threads')
 
@@ -17,8 +19,10 @@ let currentToken = null
 let loginError = null
 
 let MAX_DOWNLOAD_WORKERS = 1
+let currentEvent = null
 
 async function runLoginEvent(event, loginData) {
+  currentEvent = event 
   currentToken = null
   loginError = null
 
@@ -105,61 +109,109 @@ function renewToken () {
 
 
 const beginDownloadCycle = async (event, options) => {
+  currentEvent = event 
   log.info(`Main: Iniciando busqueda`)
   const client = options.client
 
-  MAX_DOWNLOAD_WORKERS = options.parallelDownloads
+  try {
+    MAX_DOWNLOAD_WORKERS = options.parallelDownloads
+  } catch (e) {
+    log.error(`Main: opcion 'parallelDownloads' no configurado`)
+  }
   
   downloadRunning = true
   event.sender.send('recorderSearching')
-  await beginSearch(options)
-  getDetails(options)
-  await sleep(1000)
+  beginSearch(options)
+  await createDetailsWorkers(options)
+  await sleep(5000)
   specialClientChecks(client)
-  await(1000)
+  await sleep(5000)
   event.sender.send('recorderDownloading')
-  download(event, options)
+  createDownloadWorkers(event, options)
+  checkEnding()
 }
 
 
 const beginSearch = async (options) => {
   log.info('Main: solicitud busqueda')
-  let numResults =  await search(options, currentToken)
-  log.info(`Main: ${numResults} resultados recibidos`)
+
+  options.status = 'incomplete'
+  options.resultsToSkip = 0
+  options.progress = 0
+  let searchStatus = await placeNewSearch(options, currentToken)
+
+  if(searchStatus.hasOwnProperty('error')) {
+    log.error(`Main: Error de busqueda recibido. Enviando a Renderer `)
+    currentEvent.sender.send('searchError', {error: searchStatus.error})
+    return
+  }
+  log.info(`Main: Busqueda enviada al grabador. 'Results in range: ${options.numberOfResults}'`)
+
+  //se considera busqueda incompleta mientras placeNewSearch devuelva 
+  //menos de 1000 resultados de acuerdo al API
+  while (options.status === 'incomplete') {
+    const newSearch = await getResults(options.lastRecorderIP, currentToken)
+    if(newSearch) {
+      options.resultsToSkip += newSearch.length
+      options.progress += newSearch.length
+      const IDs = newSearch.map(res => res.callID)
+      log.info('Search: Guardando resultados en BD')
+      //ordenando resultados antes de guardarlos
+      saveIDs(IDs.sort((a, b) => a - b))
+      log.info(`Main: ${IDs.length} IDs guardados en BD`)
+      
+      if(newSearch.length == 1000) {
+        log.info(`Main: Busqueda no completada. Ejecutando nueva busqueda`)
+        searchStatus = await placeNewSearch(options, currentToken)
+        log.info(`Main: ${searchStatus} Resultados`)
+      } else {
+        options.status = 'complete'
+        log.info(`Main: Busqueda completada`)
+      }
+
+    } else {
+        options.status = 'complete'
+        log.info(`Main: Busqueda sin resultados`)
+    }
+  }
 }
 
-const getDetails = async (options) => {
+const createDetailsWorkers = async (options) => {
   try {
-    log.info('Main: Creando details worker.')
-    options.token = currentToken
-    const workerURL = `${path.join(__dirname, 'details-worker.js')}`
-    const data = {
-                  workerData: {
-                                options
-                              }
-                  }
-    const worker = new Worker(workerURL, data) 
-
-    worker.on('message', async (msg) => {
-      if (msg.type === 'next') {
-        try {
-          const id = getRecordsNoProcesed(1)[0].callID
-          log.info(`Main: Details Next ID ${id}`)
-          worker.postMessage({type: 'call', callID: id})
-        } catch (e) {
-          log.error(`Main: Termina proceso de descarga de detalles de llamada`)
-          worker.postMessage({type: 'finish'})
-          await sleep(1000)
-          worker.unref()
+    for (let i = 1; i <= 2; i++) {
+      log.info('Main: Creando details worker.')
+      options.token = currentToken
+      const workerURL = `${path.join(__dirname, 'details-worker.js')}`
+      const data = {
+                    workerData: {
+                                  options
+                                }
+                    }
+      const worker = new Worker(workerURL, data) 
+  
+      worker.on('message', async (msg) => {
+        if (msg.type === 'next') {
+          try {
+            const id = getRecordsNoProcesed(1)[0].callID
+            log.info(`Main: Details Next ID ${id}`)
+            worker.postMessage({type: 'call', callID: id})
+          } catch (e) {
+            log.error(`Main: No se encuentra ningun registro en estado 'No procesado'`)
+            if (!downloadRunning) {
+              log.info(`Main: Eliminando worker ID ${worker.threadId}`)
+              worker.postMessage({type: 'end'})
+            }
+            worker.postMessage({type: 'wait'})
+          }
+        } else if (msg.type === 'details') {
+          log.info(`Main: CallID ${msg.callID}. Detalles de llamada recibidos`)
+          updateRecords(msg.callData, msg.callID)
         }
-      } else if (msg.type === 'details') {
-        log.info(`Main: CallID ${msg.callID}. Detalles de llamada recibidos`)
-        updateRecords(msg.callData, msg.callID)
-      }
-    })
-
-    workers.push(worker)
-    await sleep(5000)
+      })
+  
+      workers.push(worker)
+    }
+    await sleep(2000)
   } catch (e) {
     log.error(`Main: Error creando Details Worker. ${e}`)
   }
@@ -193,8 +245,8 @@ const specialClientChecks = async (client) => {
 
 }
 
-const download = async (event, options) => {
-  let queryFails = counter()
+const createDownloadWorkers = async (event, options) => {
+  //let queryFails = counter()
   log.info(`Main: Descargas paralelas: ${MAX_DOWNLOAD_WORKERS}`)
   
   for (let i = 0; i < MAX_DOWNLOAD_WORKERS; i++) {
@@ -214,8 +266,13 @@ const download = async (event, options) => {
           worker.postMessage({type: 'call', callData: callData})
         } catch (e) {
           log.error(`Main: No se encontraron nuevos registros en estado 'Listo Para Descargar'.`)
-          queryFails.increment()
-          queryFails.value() == 5 ? stopDownload(event, options.lastRecorderIP) : worker.postMessage({type: 'wait'})
+          //queryFails.increment()
+          //queryFails.value() ==  MAX_DOWNLOAD_WORKERS * 3? stopDownload(event, options.lastRecorderIP) : worker.postMessage({type: 'wait'})
+          if (!downloadRunning) {
+            log.info(`Main: Eliminando worker ID ${worker.threadId}`)
+            worker.postMessage({type: 'end'})
+          }
+          worker.postMessage({type: 'wait'})
         }
       }
       else if (msg.type === 'update') {
@@ -226,7 +283,18 @@ const download = async (event, options) => {
 
     workers.push(worker)
     
-  await sleep(100)
+  await sleep(1000)
+  }
+}
+
+async function checkEnding() {
+  while(downloadRunning) {
+    await sleep(20000)
+    const pending = getRPendingRecords()
+    if(pending.length === 0) {
+      downloadRunning = false
+      stopDownload(currentEvent)
+    }
   }
 }
 
@@ -234,19 +302,33 @@ const download = async (event, options) => {
 const stopDownload = async (event) => {
   log.info(`Main: Senal stop recibida. Eliminando procesos.`)
   //time added to wait transcoding and report finished
-  event.sender.send('finishing')
   downloadRunning = false
-  await sleep(15000)
-  event.sender.send('queryFinished')
-
-
-  log.info(`Main: Numero de workers activos:  ${workers.length}`)
+  event.sender.send('finishing')
+  
+  log.info(`Main: Numero de workers creados:  ${workers.length}`)
   
   workers.forEach(worker => {
-    log.info(`Main: Eliminando worker ID ${worker.threadId}`)
-    worker.terminate()
+    log.info(`Worker ID ${worker.threadId}`)
+    // log.info(`Main: Eliminando worker ID ${worker.threadId}`)
+    // worker.postMessage({type: 'end'})
   })
+
+  let workersActive = true
+
+  while(workersActive) {
+    const threadIds = workers.map(w => w.threadId)
+    if(threadIds.findIndex(id => id != -1) === -1) {
+      workersActive = false
+    } else {
+      await sleep(10000)
+    }
+
+
+    
+  }
+
   workers = []
+  event.sender.send('queryFinished')
   renewToken()
 }
 

@@ -189,8 +189,8 @@ window.api.receive('finishing', () => {
     const m1 = document.getElementById("messages-big")
     const m2 = document.getElementById("messages-small")
     gif.src = "../assets/img/finishing.png"
-    m1.innerHTML = 'Descarga Finalizada'
-    m2.innerHTML = 'verificando estado de la aplicación'
+    m1.innerHTML = 'Finalizando Descarga'
+    m2.innerHTML = 'terminando procesos pendientes'
 })
 
 window.api.receive('queryFinished', () => {
@@ -199,6 +199,16 @@ window.api.receive('queryFinished', () => {
     const modal = document.getElementById("download-dialog");
     modal.close()
     notification.innerText = 'Descarga terminada'
+    notification.opened = true
+    document.getElementById('download-button').addEventListener('click', openStatusDialog)
+})
+
+window.api.receive('searchError', (msg) => {
+    console.log('searchError')
+    const notification = document.getElementById("notification")
+    const modal = document.getElementById("download-dialog");
+    modal.close()
+    notification.innerText = 'Error ejecutando busqueda: ' + msg.error
     notification.opened = true
     document.getElementById('download-button').addEventListener('click', openStatusDialog)
 })

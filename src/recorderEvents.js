@@ -77,10 +77,10 @@ async function keepAlive(IP, token) {
 }
 
 
-async function placeNewSearch(opt) {
+async function placeNewSearch(opt, token) {
     log.info('Search: Iniciando nueva consulta.')
     let url = `${SERVER_URL.replace('<IP>',opt.lastRecorderIP)}${SEARCH_URL}`
-    let header = {'authToken': opt.token, 'Content-Type': 'application/json'}
+    let header = {'authToken': token, 'Content-Type': 'application/json'}
     let opts = {
         'resultsToSkip': opt.resultsToSkip,
         'searchMode': opt.searchMode,
@@ -110,16 +110,18 @@ async function placeNewSearch(opt) {
     //continue haciendo el cliclo. Termina en complete o error
     while(SEARCH_STATUS_PENDING.includes(searchStatus.statusShort)) {
         url = `${SERVER_URL.replace('<IP>',opt.lastRecorderIP)}${SEARCH_STATUS_URL}`
-        header = {'authToken': opt.token,'Content-Type': 'application/json'}
+        header = {'authToken': token,'Content-Type': 'application/json'}
         searchStatus = await fetchData('GET', url, header)
         log.info('Search: status ' + searchStatus.statusShort)
-        // Esperar ~4 seg entre requests
-        await sleep(4000)
+        // Esperar ~2 seg entre requests
+        await sleep(2000)
     } 
     
     if(searchStatus.statusShort === 'Complete') {
-        log.info(`Search: Busqueda completada. ${searchStatus.resultsInRange} registros encontrados`)
+        log.info(`Search: Busqueda completada. ${searchStatus.resultsFound} resultados encontrados. ${searchStatus.resultsInRange} resultados en rango`)
         return searchStatus.resultsInRange
+    } else  {
+        return searchStatus
     }
 }
 
@@ -250,4 +252,4 @@ async function search(downloadOptions, token) {
 }
 
 
-module.exports = { loginRecorder, search, logoutRecorder, downloadDetails, downloadAudio, keepAlive }
+module.exports = { loginRecorder, placeNewSearch, getResults, logoutRecorder, downloadDetails, downloadAudio, keepAlive }
