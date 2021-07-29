@@ -123,7 +123,7 @@ const beginDownloadCycle = async (event, options) => {
   
   downloadRunning = true
   event.sender.send('recorderSearching')
-  beginSearch(options)
+  await beginSearch(options)
   await createDetailsWorkers(options)
   await sleep(5000)
   specialClientChecks(client)
