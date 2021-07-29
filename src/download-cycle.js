@@ -64,9 +64,11 @@ function createLoginProcess (recorderIP, username, password) {
 
   worker.on('message', (msg) => {
     log.info(`Main: Mensaje recibido de Login Worker `)
-    log.info(msg)
     if(msg.type === 'token') {
       currentToken = msg.data
+      workers.forEach(w => {
+        w.postMessage({type: 'updatedToken' , token: currentToken})
+      })
     }
 
     if (msg.type === 'error') {
@@ -121,7 +123,7 @@ const beginDownloadCycle = async (event, options) => {
   
   downloadRunning = true
   event.sender.send('recorderSearching')
-  await beginSearch(options)
+  beginSearch(options)
   await createDetailsWorkers(options)
   await sleep(5000)
   specialClientChecks(client)
@@ -208,6 +210,9 @@ const createDetailsWorkers = async (options) => {
         } else if (msg.type === 'details') {
           log.info(`Main: CallID ${msg.callID}. Detalles de llamada recibidos`)
           updateRecords(msg.callData, msg.callID)
+        } else if (msg.type === 'newToken') {
+          log.info(`Main: CallID ${msg.callID}. Solicitud de nuevo token recibida.`)
+          renewToken()
         }
       })
   
@@ -310,6 +315,7 @@ const stopDownload = async (event) => {
 
   let workersActive = true
 
+  //TO DO: poner limite de espera
   while(workersActive) {
     const threadIds = workers.map(w => w.threadId)
     if(threadIds.findIndex(id => id != -1) === -1) {

@@ -2,7 +2,7 @@
 
 const log = require('electron-log')
 const sleep = require('./sleep.js')
-const { loginRecorder, logoutRecorder } = require('./recorderEvents.js')
+const { loginRecorder, logoutRecorder, keepAlive } = require('./recorderEvents.js')
 const { parentPort, workerData, threadId } = require('worker_threads')
 
 log.info(`Worker Download Audio ID ${threadId}: Creado`)
@@ -96,7 +96,7 @@ async function processCall(callData) {
                                 callID: callID,
                                 callData:
                                         {
-                                            idEstado: 6,
+                                            idEstado: 7,
                                             respuestaGrabador: download.error
                                         }
                                 })

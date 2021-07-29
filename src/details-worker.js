@@ -10,15 +10,30 @@ const IP = workerData.options.lastRecorderIP
 let token = workerData.options.token
 
 parentPort.on('message', async (msg) => {
+
     if (msg.type == 'call') {
-        await processCall(msg.callID)
+        
+        token ? await processCall(msg.callID) : parentPort.postMessage({type: 'update', callID: msg.callID, callData: {idEstado: 0} })
+
+        await sleep(200)
+        
         parentPort.postMessage({type: 'next'})
-    } else if (msg.type === 'wait') {
+
+    } 
+    
+    else if (msg.type === 'wait') {
         await sleep(5000)
         parentPort.postMessage({type: 'next'})
-    } else if (msg.type === 'end') {
+    } 
+    
+    else if (msg.type === 'updatedToken') {
+        token = msg.token
+    } 
+    
+    else if (msg.type === 'end') {
         process.exit(0)
     }
+
 })
 
 
@@ -33,6 +48,10 @@ async function processCall(callID) {
 
     if (dets.hasOwnProperty('error')) {
         parentPort.postMessage({type: 'update', callID: ID, callData: {idEstado: 0} })
+        if (dets.error === 'The authentication token is invalid.') {
+            token = null
+            parentPort.postMessage({type: 'newToken'})
+        }
         return dets.error
     }
 
@@ -64,3 +83,6 @@ async function processCall(callID) {
     
 }
 
+function renewToken() {
+    
+}

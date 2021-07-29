@@ -187,8 +187,8 @@ async function downloadAudio(IP, token, callID, savePath) {
     log.info(`Audio: ${options.method} ${url}`)
     let response = await fetch(url, options)
         .then(async (res) => {
-            log.info(`Audio: CallID ${callID} - Respuesta del grabador recibida`)
             const formatRes = await res.json()
+            log.info(`Audio: CallID ${callID} - Respuesta del grabador recibida -> ${Object.keys(formatRes)}`)
             return formatRes
         })
         .then(async (res) => {
@@ -197,10 +197,12 @@ async function downloadAudio(IP, token, callID, savePath) {
                 return res
             }
             if(res.hasOwnProperty('wavFile')) {
+                const wavFile = path.join(savePath, `${callID}.wav`)
                 finalPath = path.join(savePath, `${callID}.wav`)
                 log.info(`Audio: CallID ${callID} - Guardando en buffer`)
                 let buffer = Buffer.from(res.wavFile)
-                fs.writeFileSync(path.join(savePath, `${callID}.wav`),buffer, (error) => {
+                log.info(`Audio: CallID ${callID} - Escribiendo en disco ${wavFile} `)
+                fs.writeFileSync(wavFile ,buffer, (error) => {
                     if (error) {
                         log.error(`File System: CallID ${callID} - ${error}`)
                     }
