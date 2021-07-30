@@ -3,7 +3,11 @@ const sleep = require('./sleep.js')
 const zeroFill = require('./assets/lib/zeroFill.js')
 const fs = require('fs')
 const path = require('path')
+
 const log = require('electron-log')
+log.transports.file.level = 'info'
+log.transports.file.maxSize = 5242880
+log.transports.file.resolvePath = () => 'C:\\MATE\\Mate.log'
 
 const SERVER_URL = 'http://<IP>:1480'
 const LOGIN_URL = '/api/v1/sessions/login'
@@ -189,18 +193,20 @@ async function downloadAudio(IP, token, callID, savePath) {
         .then(async (res) => {
             const formatRes = await res.json()
             log.info(`Audio: CallID ${callID} - Respuesta del grabador recibida -> ${Object.keys(formatRes)}`)
-            return formatRes
-        })
-        .then(async (res) => {
-            if(res.hasOwnProperty('error')) {
-                log.error(`Audio: CallID ${callID} - Error descargando audio ${res.error}`)
-                return res
-            }
-            if(res.hasOwnProperty('wavFile')) {
+            
+            if(formatRes.hasOwnProperty('error')) {
+                log.error(`Audio: CallID ${callID} - Error descargando audio ${res.status} - ${res.statusText}. ${formatRes.error}`)
+                const errResp = {
+                    status: res.status, 
+                    statusText: res.statusText, 
+                    ...formatRes
+                }
+                return errResp
+            } else if(formatRes.hasOwnProperty('wavFile')) {
                 const wavFile = path.join(savePath, `${callID}.wav`)
                 finalPath = path.join(savePath, `${callID}.wav`)
                 log.info(`Audio: CallID ${callID} - Guardando en buffer`)
-                let buffer = Buffer.from(res.wavFile)
+                let buffer = Buffer.from(formatRes.wavFile)
                 log.info(`Audio: CallID ${callID} - Escribiendo en disco ${wavFile} `)
                 fs.writeFileSync(wavFile ,buffer, (error) => {
                     if (error) {
@@ -208,19 +214,19 @@ async function downloadAudio(IP, token, callID, savePath) {
                     }
                 })
                 log.info(`Audio: CallID ${callID} - Grabacion descargada`)
+
+                const date = new Date()
+    
+                return {
+                        respuestaGrabador: 'OK',
+                        ruta: finalPath,
+                        fechaDescarga: `${date.getDate()}/${date.getMonth()}/${date.getFullYear()} ${zeroFill(date.getHours(),2)}:${zeroFill(date.getMinutes(),2)}:${zeroFill(date.getSeconds(),2)} `
+                        }
             }
-
-            const date = new Date()
-
-            return {
-                    respuestaGrabador: 'OK',
-                    ruta: finalPath,
-                    fechaDescarga: `${date.getDate()}/${date.getMonth()}/${date.getFullYear()} ${zeroFill(date.getHours(),2)}:${zeroFill(date.getMinutes(),2)}:${zeroFill(date.getSeconds(),2)} `
-                    }
         })
         .catch((err) => {
-            log.error(`Audio: CallID ${callID} - Error descargando audio. ${err}`)
-            return err
+            log.error(`Audio: CallID ${callID} - Catch Error. ${err}`)
+            return { error: err }
         })
 
     return response

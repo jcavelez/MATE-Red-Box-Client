@@ -1,8 +1,12 @@
 'use strict'
 
-const log = require('electron-log')
 const { parentPort, workerData, threadId } = require('worker_threads')
 const sleep = require('./sleep.js')
+
+const log = require('electron-log')
+log.transports.file.level = 'info'
+log.transports.file.maxSize = 5242880
+log.transports.file.resolvePath = () => 'C:\\MATE\\Mate.log'
 
 log.info(`Worker Download Details ID ${threadId}: Creado`)
 
@@ -80,9 +84,5 @@ async function processCall(callID) {
     //tiempo para que guarde data en bd
     await sleep(100)
     
-    
-}
-
-function renewToken() {
     
 }

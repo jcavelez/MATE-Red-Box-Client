@@ -1,7 +1,11 @@
 const fs = require('fs')
 const path = require('path')
-const log = require('electron-log')
 const zeroFill = require('./assets/lib/zeroFill.js')
+
+const log = require('electron-log')
+log.transports.file.level = 'info'
+log.transports.file.maxSize = 5242880
+log.transports.file.resolvePath = () => 'C:\\MATE\\Mate.log'
 
 function createNewFileName (callData, ext) {
     let date = callData.StartDateTime.split(' ')[0].split('/')

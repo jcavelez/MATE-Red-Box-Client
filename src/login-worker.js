@@ -1,9 +1,13 @@
 'use strict'
 
 const { parentPort, workerData, threadId } = require('worker_threads')
-const log = require('electron-log')
 const { loginRecorder, logoutRecorder, keepAlive } = require('./recorderEvents.js')
 const sleep = require('./sleep.js')
+
+const log = require('electron-log')
+log.transports.file.level = 'info'
+log.transports.file.maxSize = 5242880
+log.transports.file.resolvePath = () => 'C:\\MATE\\Mate.log'
 
 log.info(`Worker Login ID ${threadId}: Creado`)
 
@@ -23,7 +27,6 @@ let loginError = null;
 
 })()
 
-log.info(`Token: ${currentToken}`)
 
 parentPort.on('message', async (msg) => {
     if (msg.type === 'getToken') {
@@ -39,7 +42,7 @@ parentPort.on('message', async (msg) => {
       currentToken = null
       loginError = null
       recorderIP = msg.data.recorderIP
-      username = msg.data.username,
+      username = msg.data.username
       password = msg.data.password
 
       await login()

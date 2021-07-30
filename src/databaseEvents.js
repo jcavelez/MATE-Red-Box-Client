@@ -1,5 +1,8 @@
 const Database = require('better-sqlite3')
 const log = require('electron-log')
+log.transports.file.level = 'info'
+log.transports.file.maxSize = 5242880
+log.transports.file.resolvePath = () => 'C:\\MATE\\Mate.log'
 
 let db = null
 const folder = 'C:\\MATE'

@@ -1,7 +1,11 @@
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const ffmpeg = require('fluent-ffmpeg')
 const deleteFile = require('fs').unlink
+
 const log = require('electron-log')
+log.transports.file.level = 'info'
+log.transports.file.maxSize = 5242880
+log.transports.file.resolvePath = () => 'C:\\MATE\\Mate.log'
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 

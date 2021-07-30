@@ -14,6 +14,7 @@ console.log = log.log
 settings.configure({prettify: true})
 log.transports.file.level = 'info'
 log.transports.file.maxSize = 5242880
+log.transports.file.resolvePath = () => 'C:\\MATE\\Mate.log'
 //TODO: log level in setting file.
 let loginWindow = null
 let win = null

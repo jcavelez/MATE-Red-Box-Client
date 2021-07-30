@@ -9,7 +9,13 @@ const { placeNewSearch } = require('./recorderEvents.js')
 const { getResults } = require('./recorderEvents.js')
 const { getRecordsNoProcesed, getRecordsNoChecked, getRecordsReadyToDownload, updateRecords, getRPendingRecords, saveIDs
 } = require('./databaseEvents')
+const { createErrorLog } = require('./download-error-logs')
 const { Worker } = require('worker_threads')
+
+
+log.transports.file.level = 'info'
+log.transports.file.maxSize = 5242880
+log.transports.file.resolvePath = () => 'C:\\MATE\\Mate.log'
 
 
 let downloadRunning = false
@@ -20,6 +26,9 @@ let loginError = null
 
 let MAX_DOWNLOAD_WORKERS = 1
 let currentEvent = null
+
+const date = new Date()
+const errorLogPath = `C:\\MATE\\download-errors.txt`
 
 async function runLoginEvent(event, loginData) {
   currentEvent = event 
@@ -122,6 +131,7 @@ const beginDownloadCycle = async (event, options) => {
   }
   
   downloadRunning = true
+  await createErrorLog(errorLogPath)
   event.sender.send('recorderSearching')
   await beginSearch(options)
   await createDetailsWorkers(options)
@@ -253,43 +263,54 @@ const specialClientChecks = async (client) => {
 }
 
 const createDownloadWorkers = async (event, options) => {
-  //let queryFails = counter()
+
   log.info(`Main: Descargas paralelas: ${MAX_DOWNLOAD_WORKERS}`)
   
   for (let i = 0; i < MAX_DOWNLOAD_WORKERS; i++) {
-    log.info('Main: Creando nuevo download worker.')
-    const workerURL = `${path.join(__dirname, 'download-worker.js')}`
-    options.token = currentToken
-    const data = { workerData: { options } }
-    const worker = new Worker(workerURL, data) 
-
-    worker.on('message', (msg) => {
-
-      if (msg.type === 'next') {
-        try {
-          const { ...callData } = getRecordsReadyToDownload(1)[0]
-          log.info(`Main: Download Next ID ${callData.callID}`)
-          updateRecords({idEstado: 3}, callData.callID)
-          worker.postMessage({type: 'call', callData: callData})
-        } catch (e) {
-          log.error(`Main: No se encontraron nuevos registros en estado 'Listo Para Descargar'.`)
-          if (!downloadRunning) {
-            log.info(`Main: Eliminando worker ID ${worker.threadId}`)
-            worker.postMessage({type: 'end'})
-          }
-          worker.postMessage({type: 'wait'})
-        }
-      }
-      else if (msg.type === 'update') {
-        log.info(`Main: CallID ${msg.callID} cambiando estado BD.`)
-        updateRecords(msg.callData, msg.callID)
-      }
-    })
-
-    workers.push(worker)
+    createDownloadWorker(options)
     
-  await sleep(1000)
+    await sleep(1000)
   }
+}
+
+function createDownloadWorker(options) {
+  log.info('Main: Creando nuevo download worker.')
+  const workerURL = `${path.join(__dirname, 'download-worker.js')}`
+  options.token = currentToken
+  const data = { workerData: { options } }
+  const worker = new Worker(workerURL, data) 
+
+  worker.on('message', (msg) => {
+
+    if (msg.type === 'next') {
+      try {
+        const { ...callData } = getRecordsReadyToDownload(1)[0]
+        log.info(`Main: Download Next ID ${callData.callID}`)
+        updateRecords({idEstado: 3}, callData.callID)
+        worker.postMessage({type: 'call', callData: callData})
+      } catch (e) {
+        log.error(`Main: No se encontraron nuevos registros en estado 'Listo Para Descargar'.`)
+        if (!downloadRunning) {
+          log.info(`Main: Eliminando worker ID ${worker.threadId}`)
+          worker.postMessage({type: 'end'})
+        }
+        worker.postMessage({type: 'wait'})
+      }
+    }
+    else if (msg.type === 'update') {
+      log.info(`Main: CallID ${msg.callID} cambiando estado BD.`)
+      updateRecords(msg.callData, msg.callID)
+    }
+    else if (msg.type === 'error') {
+      const { saveReport } = require('./reportEvents.js')
+      const values = Object.values(msg.errorData).join(',') + '\n'
+      saveReport(errorLogPath, values)
+    } else if (msg.type === 'createNewWorker') {
+      createDownloadWorker(options)
+    }
+  })
+
+  workers.push(worker)
 }
 
 async function checkEnding() {
