@@ -7,7 +7,7 @@ const { ExternalCallIDCheck }= require('./assets/lib/EMTELCO.js')
 const { logoutRecorder } = require('./recorderEvents.js')
 const { placeNewSearch } = require('./recorderEvents.js')
 const { getResults } = require('./recorderEvents.js')
-const { getRecordsNoProcesed, getRecordsNoChecked, getRecordsReadyToDownload, updateRecords, getRPendingRecords, saveIDs
+const { getRecordsNoProcesed, getRecordsNoChecked, getRecordsReadyToDownload, updateRecords, getRPendingRecords, saveIDs, saveSearch
 } = require('./databaseEvents')
 const { createErrorLog } = require('./download-error-logs')
 const { Worker } = require('worker_threads')
@@ -27,7 +27,6 @@ let loginError = null
 let MAX_DOWNLOAD_WORKERS = 1
 let currentEvent = null
 
-const date = new Date()
 const errorLogPath = `C:\\MATE\\download-errors.txt`
 
 async function runLoginEvent(event, loginData) {
@@ -48,7 +47,7 @@ async function runLoginEvent(event, loginData) {
   if (currentToken != null) {
     log.info('Main: Login OK')
     
-    //TODO: envio mensaje a ipcrenderer porque desde este modulo no se puede importar
+    //TO DO: envio mensaje a ipcrenderer porque desde este modulo no se puede importar
     event.sender.send('loginAlert', 'Login exitoso')
   } 
   else {
@@ -120,6 +119,22 @@ function renewToken () {
 
 
 const beginDownloadCycle = async (event, options) => {
+
+  log.info(options)
+  const searchData = {
+    lastRecorderIP: options.lastRecorderIP,
+    client: options.client,
+    username: options.username,
+    startTime: options.startTime,
+    endTime: options.endTime,
+    Extension: options.hasOwnProperty('extension') ? options.extension : null,
+    AgentGroup: options.hasOwnProperty('group') ? options.group : null,
+    searchMode: options.searchMode,
+    resultsToSkip: 0
+  }
+
+  saveSearch(searchData)
+
   currentEvent = event 
   log.info(`Main: Iniciando busqueda`)
   const client = options.client
@@ -139,7 +154,7 @@ const beginDownloadCycle = async (event, options) => {
   specialClientChecks(client)
   await sleep(5000)
   event.sender.send('recorderDownloading')
-  createDownloadWorkers(event, options)
+  //createDownloadWorkers(event, options)
   checkEnding()
 }
 

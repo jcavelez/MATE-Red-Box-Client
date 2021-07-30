@@ -89,10 +89,17 @@ function createSchema() {
     try {
         const info = db
             .prepare(`CREATE TABLE Busquedas (
-                FechaInicial smalldatetime,
-                FechaFinal smalldatetime,
-                NroResultados int,
-                NroDescargas int
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                searchDate text,
+                lastRecorderIP text,
+                username text,
+                searchMode text,
+                startTime text,
+                endTime text,
+                Extension text,
+                AgentGroup text,
+                client text, 
+                resultsToSkip int
                 )`)
             .run()
 
@@ -142,6 +149,29 @@ function saveIDs(IDs) {
     const values = IDs.map((id) => [id, 0])
     insertMany(['callID', 'idEstado'], values)
 }
+
+function saveSearch(data) {
+    try {
+        
+        const columns = Object.keys(data)
+        columns.push('searchDate')
+        const values = Object.values(data)
+
+        const template = new Array(values.length).fill('?')
+        template.push(`datetime('now', 'localtime')`)
+        
+        const insert = db.prepare(`INSERT INTO Busquedas (${columns}) VALUES (${template})`)
+        log.info(insert)
+        const transaction = db.transaction(insert.run(values))
+
+        transaction(values)
+
+        log.info('SQLite3: Insert succeeded')
+    } catch (error) {
+        log.error(`SQLite3: Insert ${error}`)
+    }
+}
+
 
 function getRecordsNoProcesed(top=100) {
     let columns = ['callID']
@@ -207,6 +237,24 @@ function updateRecords(data, callID) {
     }
 }
 
+function updateSearch(data, searchID) {
+    try {
+        const columns = Object.keys(data)
+        const values = Object.values(data)
+        const template = new Array(values.length).fill('?')
+        const update = db.prepare(`
+            UPDATE Busquedas
+            SET (${columns}) = (${template}) 
+            WHERE searchID = ?`)
+        
+        update.run(values, searchID)
+        log.info(`SQLite3: CallID ${searchID} - Update succeeded`)
+
+    } catch (error){
+        log.error(`SQLite3: CallID ${searchID} - Update ${error}`)
+    }
+}
+
 //Special check for EMTELCO 
 function getExternalCallID(range, Extension) {
     try {
@@ -263,7 +311,9 @@ function getRPendingRecords() {
 module.exports = {
     createDatabase,
     createSchema,
+    updateSearch,
     saveIDs,
+    saveSearch,
     getRecordsNoProcesed,
     getRecordsNoChecked,
     getRecordsReadyToDownload,
