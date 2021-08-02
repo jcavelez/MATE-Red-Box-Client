@@ -153,7 +153,7 @@ async function downloadDetails(IP, token, callID) {
 
     log.info(`Details: ${options.method} ${url}`)
 
-    let response = await fetch(url, options)
+    let response = fetch(url, options)
         .then((res) => {
             log.info(`Details: CallID ${callID}  - Respuesta del grabador recibida - ${res.status} - ${res.statusText}`)
             return res.json()
@@ -170,6 +170,7 @@ async function downloadDetails(IP, token, callID) {
         })
         .catch((err) => {
             log.error(`Details: CallID ${callID} - Fetch Error - ${err}`)
+            return {error: err}
         })
 
 
@@ -220,7 +221,7 @@ async function downloadAudio(IP, token, callID, savePath) {
                 return {
                         respuestaGrabador: 'OK',
                         ruta: finalPath,
-                        fechaDescarga: `${date.getDate()}/${date.getMonth()}/${date.getFullYear()} ${zeroFill(date.getHours(),2)}:${zeroFill(date.getMinutes(),2)}:${zeroFill(date.getSeconds(),2)} `
+                        fechaDescarga: `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()} ${zeroFill(date.getHours(),2)}:${zeroFill(date.getMinutes(),2)}:${zeroFill(date.getSeconds(),2)} `
                         }
             }
         })

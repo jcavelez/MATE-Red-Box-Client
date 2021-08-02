@@ -35,6 +35,7 @@ parentPort.on('message', async (msg) => {
     } 
     
     else if (msg.type === 'end') {
+        log.info(`Worker Download Details ID ${threadId}: exit()`)
         process.exit(0)
     }
 
@@ -51,17 +52,12 @@ async function processCall(callID) {
     let {...dets} = await downloadDetails(IP, token, callID)
 
     if (dets.hasOwnProperty('error')) {
-        parentPort.postMessage({type: 'update', callID: ID, callData: {idEstado: 0} })
+        parentPort.postMessage({type: 'update', callID: callID, callData: {idEstado: 0} })
         if (dets.error === 'The authentication token is invalid.') {
             token = null
             parentPort.postMessage({type: 'newToken'})
         }
         return dets.error
-    }
-
-    //special check for EMTELCO recorder
-    if (dets.hasOwnProperty('ExternalCallID') === false) {
-        dets.ExternalCallID = ''
     }
 
     //Solamente se guardan los campos que coincidan con los creados en schema de la BD
@@ -75,14 +71,13 @@ async function processCall(callID) {
         OtherParty: dets.OtherParty,
         AgentGroup: dets.AgentGroup,
         RBRCallGUID: dets.RBRCallGUID,
-        ExternalCallID: dets.ExternalCallID,
+        ExternalCallID: dets.hasOwnProperty('ExternalCallID') ? dets.ExternalCallID : '',
         idEstado: 2
     }
 
     parentPort.postMessage({type: 'details', callID: callID, callData: callData})
-    log.info(`Worker Download Details ID ${threadId}: Envido details Call ID ${callID} a main`)
+    log.info(`Worker Download Details ID ${threadId}: Call ID ${callID} - Enviando details a main`)
     //tiempo para que guarde data en bd
     await sleep(100)
-    
     
 }

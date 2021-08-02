@@ -48,7 +48,7 @@ parentPort.on('message', async (msg) => {
     
     else if (msg.type === 'end') {
         await logout()
-        log.info(`Worker Download Audio ID ${threadId}: Exit`)
+        log.info(`Worker Download Audio ID ${threadId}: exit()`)
         process.exit(0)
 
     }
@@ -102,6 +102,17 @@ async function processCall(callData) {
 
     if (download.hasOwnProperty('error')) {
         log.error(`Worker Download Audio ID ${threadId}: CallID ${callID} - ${download.error}`)
+
+        if (download.error == 'Internal error.') {
+            log.error(`Worker Download Audio ID ${threadId}: Deteniendo proceso`)
+            //Tiempo para que se recupere el REST API de la grabadora
+            await sleep(2000)
+            parentPort.postMessage({type: 'update', callID: callID, callData: {idEstado: 2} })
+            await sleep(200)
+            parentPort.postMessage({type: "createNewWorker"})
+            process.exit()
+        }
+
         const msgUpdate =  {
             type: 'update',
             callID: callID,
@@ -137,11 +148,6 @@ async function processCall(callData) {
 
         parentPort.postMessage(msgError)
         
-        if (download.error == 'Internal error.') {
-            log.error(`Worker Download Audio ID ${threadId}: Deteniendo proceso`)
-            parentPort.postMessage({type: "createNewWorker"})
-            process.exit()
-        }
 
         if (download.error == 'RB_RS_NOT_LICENSED' || download.error == 'The authentication token is invalid.' ) {
             await sleep(3000)
@@ -214,7 +220,7 @@ async function postDownloadTasks(callID, callData) {
 }
 
 async function logout () {
-    log.info(`Worker Download Audio ID ${threadId} : Solicitud logout a ${IP}`)
+    log.info(`Worker Download Audio ID ${threadId} : Loging out ${IP}`)
     const res = await logoutRecorder(IP, currentToken)
     currentToken = null
   }

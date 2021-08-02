@@ -213,4 +213,14 @@ window.api.receive('searchError', (msg) => {
     document.getElementById('download-button').addEventListener('click', openStatusDialog)
 })
 
+window.api.receive('queryInterrupted', () => {
+    console.log('queryInterrupted')
+    const notification = document.getElementById("notification")
+    const modal = document.getElementById("download-dialog");
+    modal.close()
+    notification.innerText = 'Descarga Interrimpida'
+    notification.opened = true
+    document.getElementById('download-button').addEventListener('click', openStatusDialog)
+})
+
 export { openDir, loadPreferences, requestStartDownload, stopDownloadProccess, openExportPreferences, openStatusDialog } 

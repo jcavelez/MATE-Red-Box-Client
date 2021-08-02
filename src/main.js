@@ -4,10 +4,10 @@ const { app, BrowserWindow, ipcMain } = require('electron')
 const { Worker } = require('worker_threads')
 const settings = require('electron-settings')
 const path = require('path')
-const { createDatabase, createSchema, saveIDs } = require('./databaseEvents')
+const { createDatabase, createSchema } = require('./databaseEvents')
 const devtools = require('./devtools')
 const log = require('electron-log')
-const { runLoginEvent, beginDownloadCycle, forceStopProcess, logout} = require('./download-cycle')
+const { runLoginEvent, beginDownloadCycle, forceStopProcess, logout } = require('./download-cycle')
 const sleep = require('./sleep')
 
 console.log = log.log

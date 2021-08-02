@@ -161,10 +161,10 @@ function saveSearch(data) {
         template.push(`datetime('now', 'localtime')`)
         
         const insert = db.prepare(`INSERT INTO Busquedas (${columns}) VALUES (${template})`)
-        log.info(insert)
-        const transaction = db.transaction(insert.run(values))
+        //const transaction = db.transaction(insert.run(values))
+        insert.run(values)
 
-        transaction(values)
+        //transaction(values)
 
         log.info('SQLite3: Insert succeeded')
     } catch (error) {
@@ -173,7 +173,7 @@ function saveSearch(data) {
 }
 
 
-function getRecordsNoProcesed(top=100) {
+function getRecordsNoProcesed(top=1) {
     let columns = ['callID']
     let records = getTop('Grabaciones', columns, 'idEstado = 0', top)
 

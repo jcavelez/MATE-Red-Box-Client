@@ -11,6 +11,7 @@ const { getRecordsNoProcesed, getRecordsNoChecked, getRecordsReadyToDownload, up
 } = require('./databaseEvents')
 const { createErrorLog } = require('./download-error-logs')
 const { Worker } = require('worker_threads')
+const { worker } = require('cluster')
 
 
 log.transports.file.level = 'info'
@@ -21,6 +22,7 @@ log.transports.file.resolvePath = () => 'C:\\MATE\\Mate.log'
 let downloadRunning = false
 let workers = []
 let loginWorker = null
+let searchWorker = null
 let currentToken = null
 let loginError = null
 
@@ -33,7 +35,6 @@ async function runLoginEvent(event, loginData) {
   currentEvent = event 
   currentToken = null
   loginError = null
-
 
   if (loginWorker == null) {
     loginWorker = createLoginProcess(loginData.recorder, loginData.username, loginData.password)
@@ -120,7 +121,6 @@ function renewToken () {
 
 const beginDownloadCycle = async (event, options) => {
 
-  log.info(options)
   const searchData = {
     lastRecorderIP: options.lastRecorderIP,
     client: options.client,
@@ -137,7 +137,6 @@ const beginDownloadCycle = async (event, options) => {
 
   currentEvent = event 
   log.info(`Main: Iniciando busqueda`)
-  const client = options.client
 
   try {
     MAX_DOWNLOAD_WORKERS = options.parallelDownloads
@@ -145,67 +144,92 @@ const beginDownloadCycle = async (event, options) => {
     log.error(`Main: opcion 'parallelDownloads' no configurado`)
   }
   
-  downloadRunning = true
   await createErrorLog(errorLogPath)
-  event.sender.send('recorderSearching')
-  await beginSearch(options)
-  await createDetailsWorkers(options)
-  await sleep(5000)
-  specialClientChecks(client)
-  await sleep(5000)
-  event.sender.send('recorderDownloading')
-  //createDownloadWorkers(event, options)
-  checkEnding()
+
+  searchWorker = await createSearchWorker(options)
+  searchWorker.postMessage({type: 'search'})
+  currentEvent.sender.send('recorderSearching')
+
+}
+
+const processPartialSearch = async (options) => {
+  downloadRunning = true
+  let tempWorkers = []
+  log.info(`Main: Creando Details Workers`)
+  let detailsWorkers = await createDetailsWorkers(options)
+  specialClientChecks(options.client)
+  //Tiempo para que el SpecialCheck comience su revision
+  await sleep(10000)
+  let downloadWorkers = await createDownloadWorkers(options)
+  currentEvent.sender.send('recorderDownloading')
+
+  tempWorkers = [].concat(detailsWorkers, downloadWorkers)
+
+  while (downloadRunning) {
+    const threadIds = tempWorkers.map(w => w.threadId)
+    if(threadIds.findIndex(id => id != -1) === -1) {
+      downloadRunning = false
+      return
+    } else {
+      log.info(`Main: Descarga parcial activa. Esperando 5 segundos.`)
+      await sleep(5000)
+    }
+  }
+
+  tempWorkers.forEach((tempWorker) => tempWorker.postMessage({type: 'end'}))
+
+  currentEvent.sender.send('queryInterrupted')
 }
 
 
-const beginSearch = async (options) => {
-  log.info('Main: solicitud busqueda')
-
-  options.status = 'incomplete'
-  options.resultsToSkip = 0
-  options.progress = 0
-  let searchStatus = await placeNewSearch(options, currentToken)
-
-  if(searchStatus.hasOwnProperty('error')) {
-    log.error(`Main: Error de busqueda recibido. Enviando a Renderer `)
-    currentEvent.sender.send('searchError', {error: searchStatus.error})
-    return
-  }
-  log.info(`Main: Estado de busqueda recibido del grabador. 'Results in range: ${searchStatus}'`)
+const createSearchWorker = async (options) => {
+  log.info('Main: Creando search worker.')
+  options.token = currentToken
+  const workerURL = `${path.join(__dirname, 'search-worker.js')}`
+  const data = {
+                workerData: {
+                              options
+                            }
+                }
   
-  //se considera busqueda incompleta mientras placeNewSearch devuelva 
-  //menos de 1000 resultados de acuerdo al API
-  while (options.status === 'incomplete') {
-    log.info(`Main: Descargando IDs'`)
-    const newSearch = await getResults(options.lastRecorderIP, currentToken)
-    if(newSearch) {
-      log.info(`Main: Array de IDs recibido'`)
-      options.resultsToSkip += newSearch.length
-      const IDs = newSearch.map(res => res.callID)
-      log.info('Main: Guardando resultados en BD')
-      //ordenando resultados antes de guardarlos
-      saveIDs(IDs.sort((a, b) => a - b))
-      log.info(`Main: ${IDs.length} IDs guardados en BD`)
-      
-      if(newSearch.length == 1000) {
-        log.info(`Main: Busqueda no completada. Ejecutando nueva busqueda`)
-        searchStatus = await placeNewSearch(options, currentToken)
-        log.info(`Main: ${searchStatus} Resultados`)
-      } else {
-        options.status = 'complete'
-        log.info(`Main: Busqueda completada`)
-      }
+  const worker = new Worker(workerURL, data) 
 
-    } else {
-        options.status = 'complete'
-        log.info(`Main: Busqueda sin resultados`)
+  worker.on('message', async (msg) => {
+
+    if (msg.type === 'results') {
+      //ordenando resultados antes de guardarlos para hacer de forma mas eficiente elcheck de emtelco
+      saveIDs(msg.IDs.sort((a, b) => a - b))
+      log.info(`Main: ${msg.IDs.length} IDs guardados en BD`)
+      await processPartialSearch(options)
+      // el API devuelve en paquetes de 1000, por lo tanto si el resultado es 1000, significa
+      //que hay resultados pendientes.
+      if (msg.IDs.length === 1000) {
+        worker.postMessage({type: 'search'})
+        currentEvent.sender.send('recorderSearching')
+      } else {
+        log.info('Main: Busqueda termianda. Finalizando proceso.')
+        currentEvent.sender.send('finishing')
+        searchWorker.postMessage({type: 'end'})
+        currentEvent.sender.send('queryFinished')
+        searchWorker = null
+      }
     }
-  }
+
+    else if (msg.type === 'complete') {
+      log.info('Main: Busqueda termianda. Finalizando proceso.')
+      searchWorker.postMessage({type: 'end'})
+      searchWorker = null
+    }
+
+  })
+
+  return worker
+
 }
 
 const createDetailsWorkers = async (options) => {
   try {
+    let detWorkers = []
     for (let i = 1; i <= 2; i++) {
       log.info('Main: Creando details worker.')
       options.token = currentToken
@@ -226,24 +250,27 @@ const createDetailsWorkers = async (options) => {
             worker.postMessage({type: 'call', callID: id})
           } catch (e) {
             log.error(`Main: No se encuentra ningun registro en estado 'No procesado'`)
-            if (!downloadRunning) {
-              log.info(`Main: Eliminando worker ID ${worker.threadId}`)
-              worker.postMessage({type: 'end'})
-            }
-            worker.postMessage({type: 'wait'})
+            worker.postMessage({type: 'end'})
           }
-        } else if (msg.type === 'details') {
+        } 
+        
+        else if (msg.type === 'details') {
           log.info(`Main: CallID ${msg.callID}. Detalles de llamada recibidos`)
           updateRecords(msg.callData, msg.callID)
-        } else if (msg.type === 'newToken') {
+        } 
+        
+        else if (msg.type === 'newToken') {
           log.info(`Main: CallID ${msg.callID}. Solicitud de nuevo token recibida.`)
           renewToken()
-        }
+        } 
       })
   
-      workers.push(worker)
+      detWorkers.push(worker)
+      await sleep(200)
     }
-    await sleep(2000)
+
+    return detWorkers
+
   } catch (e) {
     log.error(`Main: Error creando Details Worker. ${e}`)
   }
@@ -262,7 +289,7 @@ const specialClientChecks = async (client) => {
         let call = getRecordsNoChecked(1)[0]
         if (call === undefined) {
           log.info(`EMTELCO Check: No se encontro nuevo registro.`)
-          await sleep(10000)
+          await sleep(3000)
           continue
         }
         log.info(`EMTELCO Check: Buscando ExternalCallID para ${call.callID}`)
@@ -277,15 +304,19 @@ const specialClientChecks = async (client) => {
 
 }
 
-const createDownloadWorkers = async (event, options) => {
+const createDownloadWorkers = async (options) => {
 
   log.info(`Main: Descargas paralelas: ${MAX_DOWNLOAD_WORKERS}`)
+  let downloadWorkers = []
   
   for (let i = 0; i < MAX_DOWNLOAD_WORKERS; i++) {
-    createDownloadWorker(options)
+    const downloadWorker = createDownloadWorker(options)
+    downloadWorkers.push(downloadWorker)
     
-    await sleep(1000)
+    await sleep(200)
   }
+
+  return downloadWorkers
 }
 
 function createDownloadWorker(options) {
@@ -305,84 +336,38 @@ function createDownloadWorker(options) {
         worker.postMessage({type: 'call', callData: callData})
       } catch (e) {
         log.error(`Main: No se encontraron nuevos registros en estado 'Listo Para Descargar'.`)
-        if (!downloadRunning) {
-          log.info(`Main: Eliminando worker ID ${worker.threadId}`)
-          worker.postMessage({type: 'end'})
-        }
-        worker.postMessage({type: 'wait'})
+        worker.postMessage({type: 'end'})
       }
     }
+
     else if (msg.type === 'update') {
       log.info(`Main: CallID ${msg.callID} cambiando estado BD.`)
       updateRecords(msg.callData, msg.callID)
     }
+
     else if (msg.type === 'error') {
       const { saveReport } = require('./reportEvents.js')
       const values = Object.values(msg.errorData).join(',') + '\n'
       saveReport(errorLogPath, values)
-    } else if (msg.type === 'createNewWorker') {
+    } 
+    
+    else if (msg.type === 'createNewWorker') {
       createDownloadWorker(options)
     }
+    
   })
 
-  workers.push(worker)
+  return worker
 }
 
-async function checkEnding() {
-  while(downloadRunning) {
-    await sleep(20000)
-    const pending = getRPendingRecords()
-    if(pending.length === 0) {
-      downloadRunning = false
-      stopDownload(currentEvent)
-    }
-  }
-}
-
-
-const stopDownload = async (event) => {
-  log.info(`Main: Senal stop recibida. Esperando finalizacion de procesos pendientes.`)
-  //time added to wait transcoding and report finished
-  downloadRunning = false
-  event.sender.send('finishing')
-  
-  log.info(`Main: Numero de workers creados:  ${workers.length}`)
-  
-
-  let workersActive = true
-
-  //TO DO: poner limite de espera
-  while(workersActive) {
-    const threadIds = workers.map(w => w.threadId)
-    if(threadIds.findIndex(id => id != -1) === -1) {
-      workersActive = false
-    } else {
-      log.info(`Main: Se encontraron procesos pendientes. Esperando 10 segundos.`)
-      await sleep(10000)
-    }
-
-  }
-
-  workers = []
-  event.sender.send('queryFinished')
-  //renewToken()
-}
 
 const forceStopProcess = (event) => {
   log.info(`Main: Senal stop recibida. Forzando la finalizacion de procesos.`)
-  //time added to wait transcoding and report finished
-  downloadRunning = false
+  
   event.sender.send('finishing')
-  
-  log.info(`Main: Numero de workers creados:  ${workers.length}`)
-  
-  workers.forEach(worker => {
-    log.info(`Main: Eliminando worker ID ${worker.threadId}`)
-    worker.postMessage({type: 'end'})
-  })
 
-  workers = []
-  event.sender.send('queryFinished')
+  downloadRunning = false // Esto hara que la funcion ProcessPartialSearch detenga sus subprocesos pendientes
+  
   renewToken()
 }
 
@@ -392,4 +377,4 @@ const logout = async (IP) => {
 }
 
  
-module.exports = { beginDownloadCycle, stopDownload, runLoginEvent, logout, forceStopProcess }
+module.exports = { beginDownloadCycle, runLoginEvent, logout, forceStopProcess }
