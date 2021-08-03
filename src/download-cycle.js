@@ -157,11 +157,11 @@ const processPartialSearch = async (options) => {
   let tempWorkers = []
   log.info(`Main: Creando Details Workers`)
   let detailsWorkers = await createDetailsWorkers(options)
+  currentEvent.sender.send('recorderDownloading')
   specialClientChecks(options.client)
   //Tiempo para que el SpecialCheck comience su revision
   await sleep(10000)
   let downloadWorkers = await createDownloadWorkers(options)
-  currentEvent.sender.send('recorderDownloading')
 
   tempWorkers = [].concat(detailsWorkers, downloadWorkers)
 
@@ -171,14 +171,18 @@ const processPartialSearch = async (options) => {
       downloadRunning = false
       return
     } else {
-      log.info(`Main: Descarga parcial activa. Esperando 5 segundos.`)
-      await sleep(5000)
+      log.info(`Main: Descarga parcial activa. Esperando 2 segundos.`)
+      await sleep(2000)
     }
   }
 
-  tempWorkers.forEach((tempWorker) => tempWorker.postMessage({type: 'end'}))
-
+  //este codigo se ejecuta cuando la busqueda ha sido interrumpida
+  //con el boton Detener
+  searchWorker.postMessage({type: 'end'})
+  searchWorker = null
   currentEvent.sender.send('queryInterrupted')
+  tempWorkers.forEach((tempWorker) => tempWorker.postMessage({type: 'end'}))
+  await sleep(1000)
 }
 
 
@@ -207,11 +211,16 @@ const createSearchWorker = async (options) => {
         worker.postMessage({type: 'search'})
         currentEvent.sender.send('recorderSearching')
       } else {
-        log.info('Main: Busqueda termianda. Finalizando proceso.')
-        currentEvent.sender.send('finishing')
-        searchWorker.postMessage({type: 'end'})
-        currentEvent.sender.send('queryFinished')
-        searchWorker = null
+        try {
+          log.info('Main: Busqueda termianda. Finalizando proceso.')
+          currentEvent.sender.send('finishing')
+          searchWorker.postMessage({type: 'end'})
+          await sleep(2000)
+          currentEvent.sender.send('queryFinished')
+          searchWorker = null
+        } catch (error) {
+          
+        }
       }
     }
 

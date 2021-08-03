@@ -11,6 +11,7 @@ function createDatabase (databaseName) {
     const fs = require('fs')
     const join = require('path').join
     let options = {
+        timeout: 10000
         //verbose: console.log
     }
     if(!fs.existsSync(folder)) {

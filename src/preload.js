@@ -10,7 +10,7 @@ contextBridge.exposeInMainWorld(
             }
         },
         receive: (channel, func) => {
-            let validChannels = ['fromMain', 'recievePath', 'loadLastLogin', 'loginAlert', 'searchError', 'newToken', 'recorderSearching', 'recorderDownloading',  'recorderLoginError', 'finishing' ,'queryFinished', 'getPreferences', 'downloadResponse'];
+            let validChannels = ['fromMain', 'recievePath', 'loadLastLogin', 'loginAlert', 'searchError', 'newToken', 'recorderSearching', 'recorderDownloading',  'recorderLoginError', 'finishing' ,'queryFinished', 'queryInterrupted', 'getPreferences', 'downloadResponse'];
             if (validChannels.includes(channel)) {
                 // Deliberately strip event as it includes `sender` 
                 ipcRenderer.on(channel, (event, ...args) => func(...args))

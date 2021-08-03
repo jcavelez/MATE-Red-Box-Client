@@ -218,7 +218,7 @@ window.api.receive('queryInterrupted', () => {
     const notification = document.getElementById("notification")
     const modal = document.getElementById("download-dialog");
     modal.close()
-    notification.innerText = 'Descarga Interrimpida'
+    notification.innerText = 'Descarga Interrumpida'
     notification.opened = true
     document.getElementById('download-button').addEventListener('click', openStatusDialog)
 })
