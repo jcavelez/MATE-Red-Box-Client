@@ -247,7 +247,7 @@ function updateSearch(data, searchID) {
             UPDATE Busquedas
             SET (${columns}) = (${template}) 
             WHERE searchID = ?`)
-        
+        log.info(update)
         update.run(values, searchID)
         log.info(`SQLite3: CallID ${searchID} - Update succeeded`)
 

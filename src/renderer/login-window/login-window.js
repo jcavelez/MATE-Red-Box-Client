@@ -42,12 +42,14 @@ function validateIPAddress(inputText) {
 }
 
 window.api.receive('loadLastLogin', (loginData) => {
+    console.log('loadLastLogin')
     recorderInput.value = loginData.recorder
     usernameInput.value = loginData.username
     passwordInput.value = loginData.password
 })
 
 window.api.receive('loginAlert', (msg) => {
+    console.log('loginAlert')
     modal.classList.remove('is-visible')
     notification.innerHTML = msg
     notification.opened = true

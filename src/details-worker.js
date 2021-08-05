@@ -16,8 +16,15 @@ let token = workerData.options.token
 parentPort.on('message', async (msg) => {
 
     if (msg.type == 'call') {
-        
-        token ? await processCall(msg.callID) : parentPort.postMessage({type: 'update', callID: msg.callID, callData: {idEstado: 0} })
+
+        if (token) {
+            await processCall(msg.callID)
+        } else {
+            log.error(`Worker Download Details ID ${threadId}: Call ID ${msg.callID} - No hay token disponible`)
+            parentPort.postMessage({type: 'update', callID: msg.callID, callData: {idEstado: 0} })
+            parentPort.postMessage({type: 'newToken'})
+            await sleep(2000)
+        }
 
         await sleep(200)
         
@@ -26,7 +33,7 @@ parentPort.on('message', async (msg) => {
     } 
     
     else if (msg.type === 'wait') {
-        await sleep(5000)
+        await sleep(10000)
         parentPort.postMessage({type: 'next'})
     } 
     
@@ -45,17 +52,19 @@ parentPort.on('message', async (msg) => {
 parentPort.postMessage({type: 'next'})
 
 async function processCall(callID) {
-    log.info(`Worker Download Details ID ${threadId}: Inicio procesamiento CallID ${callID}`)
+    log.info(`Worker Download Details ID ${threadId}: CallID ${callID} - Inicio procesamiento `)
     const { downloadDetails } = require('./recorderEvents.js')
     let callData
 
     let {...dets} = await downloadDetails(IP, token, callID)
 
     if (dets.hasOwnProperty('error')) {
+        log.error(`Worker Download Details ID ${threadId}: Call ID ${callID} - ${dets.error}`)
         parentPort.postMessage({type: 'update', callID: callID, callData: {idEstado: 0} })
         if (dets.error === 'The authentication token is invalid.') {
             token = null
             parentPort.postMessage({type: 'newToken'})
+            await sleep(2000)
         }
         return dets.error
     }

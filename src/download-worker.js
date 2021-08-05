@@ -94,13 +94,13 @@ async function processCall(callData) {
 
     log.info(`Worker Download Audio ID ${threadId}: CallID ${callID} -  Solicitando descarga`)
 
-    let { ...download } = await downloadAudio(IP, currentToken, callID, downloadPath)
-    
-    log.info(`Worker Download Audio ID ${threadId}: CallID ${callData.callID} - Descarga terminada`)
+    let download = await downloadAudio(IP, currentToken, callID, downloadPath)
+
+    log.info(`Worker Download Audio ID ${threadId}: CallID ${callID} -  Respuesta recibida`)
     
     callData = { ...callData, ...download }
 
-    if (download.hasOwnProperty('error')) {
+    if (download.hasOwnProperty('error') || download == {}) {
         log.error(`Worker Download Audio ID ${threadId}: CallID ${callID} - ${download.error}`)
 
         if (download.error == 'Internal error.') {
@@ -108,6 +108,7 @@ async function processCall(callData) {
             //Tiempo para que se recupere el REST API de la grabadora
             await sleep(2000)
             parentPort.postMessage({type: 'update', callID: callID, callData: {idEstado: 2} })
+            //tiempo para no bloquear la BD
             await sleep(200)
             parentPort.postMessage({type: "createNewWorker"})
             process.exit()
@@ -122,6 +123,7 @@ async function processCall(callData) {
                     respuestaGrabador: download.error
                 }
         }
+    
         parentPort.postMessage(msgUpdate)
 
         const msgError = {
@@ -158,8 +160,8 @@ async function processCall(callData) {
             parentPort.postMessage({type: 'next'})
         }
         
-
         return
+
     } else {
         //Estado: descargado
         callData.idEstado = 4
@@ -171,7 +173,7 @@ async function processCall(callData) {
                         ruta: callData.ruta,
                         fechaDescarga: callData.fechaDescarga
                     }
-
+    log.info(`Worker Download Audio ID ${threadId}: CallID ${callID} - Cambiando estado a ${callData.idEstado}`)
     parentPort.postMessage({type: 'update', callID: callID, callData: newData })
     await postDownloadTasks(callID, callData)
 }
@@ -184,7 +186,6 @@ async function postDownloadTasks(callID, callData) {
     const outputFormat = downloadOptions.outputFormat
     let ruta = callData.ruta
     const overwrite = downloadOptions.overwrite
-    //const AgentGroup = callData.AgentGroup
     const StartDateTime = callData.StartDateTime
     
     if (callData.idEstado === 4) {

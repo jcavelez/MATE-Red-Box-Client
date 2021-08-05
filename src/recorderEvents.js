@@ -141,40 +141,41 @@ async function getResults(IP, token) {
 }
 
 async function downloadDetails(IP, token, callID) {
-    log.info(`Details: CallID ${callID} - Descargando detalles de llamada.`)
+	log.info(`Details: CallID ${callID} - Descargando detalles de llamada.`)
 
-    let options = {
-        method: 'GET',
-        headers: {
-            'authToken': token
+	let options = {
+			method: 'GET',
+			headers: {
+					'authToken': token
+			}
+	}
+	let url = `${SERVER_URL.replace('<IP>', IP)}${CALL_DETAILS_URL.replace('<callID>', callID)}`
+
+	log.info(`Details: ${options.method} ${url}`)
+
+    try {
+        let response = await fetch(url, options)
+        log.info(`Details: CallID ${callID}  - Respuesta del grabador recibida - ${response.status} - ${response.statusText}`)
+        let data = await response.json()
+
+        if (response.ok) {
+            let callDetails = {}
+				data.fields.forEach(field => { callDetails[field.Key] = field.Value })
+				log.info(`Details: CallID ${callID} - Finaliza descarga detalles.`)
+				return callDetails
+        } else {
+            //promesa resuelta, pero con error
+            if(data.hasOwnProperty('error')) {
+            log.error(`Details: CallID ${callID} - Error - ${data.error}`)
+            return data
         }
     }
-    let url = `${SERVER_URL.replace('<IP>', IP)}${CALL_DETAILS_URL.replace('<callID>', callID)}`
-
-    log.info(`Details: ${options.method} ${url}`)
-
-    let response = fetch(url, options)
-        .then((res) => {
-            log.info(`Details: CallID ${callID}  - Respuesta del grabador recibida - ${res.status} - ${res.statusText}`)
-            return res.json()
-        })
-        .then((res) => {
-            if(res.hasOwnProperty('error')) {
-                log.error(`Details: CallID ${callID} - Error - ${res.error}`)
-                return ([res])
-            }
-            let callDetails = {}
-            res.fields.forEach(field => { callDetails[field.Key] = field.Value })
-            log.info(`Details: CallID ${callID} - Finaliza descarga detalles.`)
-            return callDetails
-        })
-        .catch((err) => {
-            log.error(`Details: CallID ${callID} - Fetch Error - ${err}`)
-            return {error: err}
-        })
-
-
-    return response
+        
+    } catch (error) {
+        //promesa sin resolver
+        log.error(`Details: CallID ${callID} - Promise Rejected - Error ${error}`)
+        return { error: error}
+    }
 }
 
 async function downloadAudio(IP, token, callID, savePath) {
@@ -190,76 +191,64 @@ async function downloadAudio(IP, token, callID, savePath) {
     let finalPath
     let url = `${SERVER_URL.replace('<IP>', IP)}${CALL_AUDIO_URL.replace('<callID>', callID)}`
     log.info(`Audio: ${options.method} ${url}`)
-    let response = await fetch(url, options)
-        .then(async (res) => {
-            const formatRes = await res.json()
-            log.info(`Audio: CallID ${callID} - Respuesta del grabador recibida -> ${Object.keys(formatRes)}`)
+    try {
+
+        let response = await fetch(url, options)
+        log.info(`Audio: CallID ${callID} - Respuesta recibida `)
+        let data = await response.json()
+
+        if (response.ok && data.hasOwnProperty('wavFile')) {
+            log.info(`Audio: CallID ${callID} - Respuesta valida`)
             
-            if(formatRes.hasOwnProperty('error')) {
-                log.error(`Audio: CallID ${callID} - Error descargando audio ${res.status} - ${res.statusText}. ${formatRes.error}`)
-                const errResp = {
-                    status: res.status, 
-                    statusText: res.statusText, 
-                    ...formatRes
+            const wavFile = path.join(savePath, `${callID}.wav`)
+            finalPath = path.join(savePath, `${callID}.wav`)
+            log.info(`Audio: CallID ${callID} - Guardando en buffer`)
+            let buffer = Buffer.from(data.wavFile)
+            log.info(`Audio: CallID ${callID} - Escribiendo en disco ${wavFile} `)
+            fs.writeFileSync(wavFile ,buffer, (error) => {
+                if (error) {
+                    log.error(`File System: CallID ${callID} - ${error}`)
                 }
-                return errResp
-            } else if(formatRes.hasOwnProperty('wavFile')) {
-                const wavFile = path.join(savePath, `${callID}.wav`)
-                finalPath = path.join(savePath, `${callID}.wav`)
-                log.info(`Audio: CallID ${callID} - Guardando en buffer`)
-                let buffer = Buffer.from(formatRes.wavFile)
-                log.info(`Audio: CallID ${callID} - Escribiendo en disco ${wavFile} `)
-                fs.writeFileSync(wavFile ,buffer, (error) => {
-                    if (error) {
-                        log.error(`File System: CallID ${callID} - ${error}`)
+            })
+            log.info(`Audio: CallID ${callID} - Grabacion descargada`)
+    
+            const date = new Date()
+    
+            return {
+                    respuestaGrabador: 'OK',
+                    ruta: finalPath,
+                    fechaDescarga: `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()} ${zeroFill(date.getHours(),2)}:${zeroFill(date.getMinutes(),2)}:${zeroFill(date.getSeconds(),2)} `
                     }
-                })
-                log.info(`Audio: CallID ${callID} - Grabacion descargada`)
-
-                const date = new Date()
-    
-                return {
-                        respuestaGrabador: 'OK',
-                        ruta: finalPath,
-                        fechaDescarga: `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()} ${zeroFill(date.getHours(),2)}:${zeroFill(date.getMinutes(),2)}:${zeroFill(date.getSeconds(),2)} `
-                        }
-            }
-        })
-        .catch((err) => {
-            log.error(`Audio: CallID ${callID} - Catch Error. ${err}`)
-            return { error: err }
-        })
-
-    return response
-}
-
-
-async function search(downloadOptions, token) {
-    const { saveIDs } = require('./databaseEvents.js')
-    downloadOptions.token = token
-    downloadOptions.status = 'incomplete'
-    downloadOptions.progress = 0
-    downloadOptions.numberOfResults = await placeNewSearch(downloadOptions)
-    
-    while (downloadOptions.status === 'incomplete') {
-        const newSearch = await getResults(
-                                downloadOptions.lastRecorderIP,
-                                downloadOptions.token)
-        if(newSearch) {
-            downloadOptions.resultsToSkip += 1000
-            downloadOptions.progress += newSearch.length
-            const IDs = newSearch.map(res => res.callID)
-            log.info('Search: Guardando resultados en BD')
-            saveIDs(IDs.sort((a, b) => a - b))
-            log.info(`Search: ${newSearch.length} IDs guardados en BD`)
-            downloadOptions.numberOfResults = await placeNewSearch(downloadOptions)
         } else {
-            downloadOptions.status = 'complete'
-        }
-    }
+            log.error(`Audio: CallID ${callID} - Respuesta inavalida`)
+
+            let errorResponse = {}
+
+            if(data.hasOwnProperty('error')) {
+                log.error(`Audio: CallID ${callID} - Error descargando audio: ${response.status} - ${response.statusText}. ${data.error}`)
+                errorResponse = {
+                    status: response.status, 
+                    statusText: response.statusText, 
+                    ...data
+                }
+            } else {
+                errorResponse.error = 'TIMEOUT'
+            }
     
-    return downloadOptions.progress
+            return errorResponse
+        }
+    } catch (e)  {
+        log.error(`Audio: CallID ${callID} - Promise Rejected - ${e}`)
+        // e = [ 'message', 'type', 'errno', 'code' ]
+        const error = {
+            status: e.type, 
+            statusText: e.code, 
+            error: e.errno
+        }
+        return error
+    }
 }
+
 
 
 module.exports = { loginRecorder, placeNewSearch, getResults, logoutRecorder, downloadDetails, downloadAudio, keepAlive }

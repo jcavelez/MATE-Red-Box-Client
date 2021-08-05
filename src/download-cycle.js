@@ -11,7 +11,6 @@ const { getRecordsNoProcesed, getRecordsNoChecked, getRecordsReadyToDownload, up
 } = require('./databaseEvents')
 const { createErrorLog } = require('./download-error-logs')
 const { Worker } = require('worker_threads')
-const { worker } = require('cluster')
 
 
 log.transports.file.level = 'info'
@@ -269,14 +268,18 @@ const createDetailsWorkers = async (options) => {
         } 
         
         else if (msg.type === 'newToken') {
-          log.info(`Main: CallID ${msg.callID}. Solicitud de nuevo token recibida.`)
+          log.info(`Main:. Solicitud de nuevo token recibida.`)
           renewToken()
-        } 
+        } else if (msg.type === 'update') {
+          log.info(`Main: CallID ${msg.callID} cambiando estado BD a ${msg.callData.idEstado}.`)
+          updateRecords(msg.callData, msg.callID)
+        }
       })
   
       detWorkers.push(worker)
       await sleep(200)
     }
+
 
     return detWorkers
 
@@ -350,11 +353,12 @@ function createDownloadWorker(options) {
     }
 
     else if (msg.type === 'update') {
-      log.info(`Main: CallID ${msg.callID} cambiando estado BD.`)
+      log.info(`Main: CallID ${msg.callID} cambiando estado BD a ${msg.callData.idEstado}.`)
       updateRecords(msg.callData, msg.callID)
     }
 
     else if (msg.type === 'error') {
+      log.info(`Main: ${msg.errorData.callID} - Guardando log error de descarga`)
       const { saveReport } = require('./reportEvents.js')
       const values = Object.values(msg.errorData).join(',') + '\n'
       saveReport(errorLogPath, values)

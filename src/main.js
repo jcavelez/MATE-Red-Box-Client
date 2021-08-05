@@ -70,11 +70,14 @@ function createLoginWindow () {
   loginWindow.loadURL(path.join(__dirname, './renderer/login.html'))
 
   loginWindow.once('ready-to-show', () => {
+    log.info(`Main. Login Window event ready-to-show`)
     const lastLogin = {
       recorder: settings.hasSync('lastRecorderIP') ? settings.getSync('lastRecorderIP') : '',
       username: settings.hasSync('username') ? settings.getSync('username') : '',
       password: settings.hasSync('password') ? settings.getSync('password') : ''
     }
+    
+    log.info(`Main: Enviando webContent 'loadLastLogin'`)
     loginWindow.webContents.send('loadLastLogin', lastLogin)
     loginWindow.show()
     
