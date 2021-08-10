@@ -115,6 +115,7 @@ async function processCall(callData) {
     
         parentPort.postMessage(msgUpdate)
 
+        //se envia toda la data para ser guardada en archivo de log de errores de descarga
         const msgError = {
             type: 'error', 
             errorData: {
@@ -152,13 +153,19 @@ async function processCall(callData) {
 
         
 
-        if (download.error == 'RB_RS_NOT_LICENSED' || download.error == 'The authentication token is invalid.' ) {
-            await sleep(3000)
+        if (download.error == 'The authentication token is invalid.') {
             log.error(`Worker Download Audio ID ${threadId}: Renovando login`)
             await logout()
             const res = await login()
             await checkLogin(res)
             parentPort.postMessage({type: 'next'})
+        }
+
+        if (download.error == 'RB_RS_NOT_LICENSED') {
+            log.error(`Worker Download Audio ID ${threadId}: Grabadora no licenciada. Eliminando worker`)
+            parentPort.postMessage({type: 'update', callID: callID, callData: {idEstado: 2} })
+            await sleep(200)
+            parentPort.postMessage({type: 'recorderNotLicensed'})
         }
         
         return

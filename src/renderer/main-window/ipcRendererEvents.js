@@ -94,7 +94,7 @@ function requestStartDownload(options) {
     window.api.send('startDownload', options) 
 }
 
-function openExportPreferences(event) {
+function openExportPreferences() {
     window.api.send('openExportOptions')
     //closing dialog
     const dialog = document.getElementById('menu-dialog')
@@ -155,9 +155,11 @@ window.api.receive('recorderSearching', () => {
     const gif = document.getElementById("gif")
     const m1 = document.getElementById("messages-big")
     const m2 = document.getElementById("messages-small")
+    const continueBtn = document.getElementById('continue-btn')
     gif.src = "../assets/img/search.gif"
     m1.innerHTML = 'Ejecutando búsqueda'
     m2.innerHTML = 'Por favor espere'
+    continueBtn.style.display = 'none'
 })
 
 window.api.receive('recorderDownloading', () => {
@@ -193,12 +195,13 @@ window.api.receive('finishing', () => {
     m2.innerHTML = 'terminando procesos pendientes'
 })
 
-window.api.receive('queryFinished', () => {
+window.api.receive('queryFinished', (data) => {
     console.log('queryfinished')
     const notification = document.getElementById("notification")
     const modal = document.getElementById("download-dialog");
     modal.close()
-    notification.innerText = 'Descarga terminada'
+    notification.innerText =    `Descarga Terminada.
+                                Descargas: ${data.successes}. Errores: ${data.failures}. Pendientes: ${data.partials}`
     notification.opened = true
     document.getElementById('download-button').addEventListener('click', openStatusDialog)
 })
@@ -213,14 +216,33 @@ window.api.receive('searchError', (msg) => {
     document.getElementById('download-button').addEventListener('click', openStatusDialog)
 })
 
-window.api.receive('queryInterrupted', () => {
+window.api.receive('queryInterrupted', (data) => {
     console.log('queryInterrupted')
     const notification = document.getElementById("notification")
     const modal = document.getElementById("download-dialog");
     modal.close()
-    notification.innerText = 'Descarga Interrumpida'
+    notification.innerText =    `Descarga Interrumpida. Descargas: ${data.successes}. Errores: ${data.failures}.  Pendientes: ${data.partials}`
     notification.opened = true
     document.getElementById('download-button').addEventListener('click', openStatusDialog)
 })
 
+window.api.receive('recorderNotLicensed', () => {
+    console.log('recorderNotLicensed')
+    const gif = document.getElementById("gif")
+    const m1 = document.getElementById("messages-big")
+    const m2 = document.getElementById("messages-small")
+    const continueBtn = document.getElementById('continue-btn')
+    gif.src = "../assets/img/warning.svg"
+    m1.innerHTML = 'Cerrando Proceso'
+    m2.innerHTML = 'No hay suficientes licencias de reproducción disponibles'
+    continueBtn.style.display = 'flex'
+    continueBtn.addEventListener('click' , () => {
+        gif.src = "../assets/img/downloading.gif"
+        m1.innerHTML = 'Descarga de Audios en Curso'
+        m2.innerHTML = 'por favor espere'
+        continueBtn.style.display = 'none'
+    })
+})
+
 export { openDir, loadPreferences, requestStartDownload, stopDownloadProccess, openExportPreferences, openStatusDialog } 
+

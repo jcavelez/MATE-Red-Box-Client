@@ -185,6 +185,10 @@ header {
     justify-content: center;
 }
 
+.messages-buttons > x-button {
+    margin: 0 3px 0 3px;
+}
+
 x-button:hover {
     box-shadow: 0 1px 4px rgb(0 0 0 / 0.2);
 }
@@ -198,3 +202,17 @@ x-button:hover {
     margin-top: 3px;
 
 }
+
+#continue-btn {
+    display: none;
+}
+
+#notification {
+    width: 95%;
+    justify-content: center;
+}
+
+#notification[opened] {
+    display: flex;
+}
+

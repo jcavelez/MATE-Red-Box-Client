@@ -5,10 +5,16 @@ const sleep = require('./sleep.js')
 const counter = require('./assets/lib/counter.js')
 const { ExternalCallIDCheck }= require('./assets/lib/EMTELCO.js')
 const { logoutRecorder } = require('./recorderEvents.js')
-const { placeNewSearch } = require('./recorderEvents.js')
-const { getResults } = require('./recorderEvents.js')
-const { getRecordsNoProcesed, getRecordsNoChecked, getRecordsReadyToDownload, updateRecords, getRPendingRecords, saveIDs, saveSearch
-} = require('./databaseEvents')
+const { clearRecordsTable } = require('./databaseEvents')
+const { getRecordsNoProcesed,
+        getRecordsNoChecked,
+        getRecordsReadyToDownload,
+        getTotalDownloads,
+        getTotalErrors,
+        getTotalPartials,
+        updateRecords,
+        saveIDs,
+        saveSearch } = require('./databaseEvents')
 const { createErrorLog, saveDownloadError } = require('./download-error-logs')
 const { Worker } = require('worker_threads')
 
@@ -120,6 +126,8 @@ function renewToken () {
 
 const beginDownloadCycle = async (event, options) => {
 
+  clearRecordsTable()
+
   const searchData = {
     lastRecorderIP: options.lastRecorderIP,
     client: options.client,
@@ -170,8 +178,8 @@ const processPartialSearch = async (options) => {
       downloadRunning = false
       return
     } else {
-      log.info(`Main: Descarga parcial activa. Esperando 2 segundos.`)
-      await sleep(2000)
+      log.info(`Main: Descarga parcial activa. Esperando 1 segundos.`)
+      await sleep(1000)
     }
   }
 
@@ -179,7 +187,15 @@ const processPartialSearch = async (options) => {
   //con el boton Detener
   searchWorker.postMessage({type: 'end'})
   searchWorker = null
-  currentEvent.sender.send('queryInterrupted')
+  const successes = getTotalDownloads()[0].total
+  const failures = getTotalErrors()[0].total
+  const partials = getTotalPartials()[0].total
+  const data = {
+      successes: successes,
+      failures: failures,
+      partials: partials
+  }
+  currentEvent.sender.send('queryInterrupted', data)
   tempWorkers.forEach((tempWorker) => tempWorker.postMessage({type: 'end'}))
   await sleep(1000)
 }
@@ -211,14 +227,22 @@ const createSearchWorker = async (options) => {
         currentEvent.sender.send('recorderSearching')
       } else {
         try {
-          log.info('Main: Busqueda termianda. Finalizando proceso.')
+          log.info('Main: Busqueda terminada. Finalizando procesos.')
+          await sleep(2000)
           currentEvent.sender.send('finishing')
           searchWorker.postMessage({type: 'end'})
           await sleep(2000)
-          currentEvent.sender.send('queryFinished')
+          const successes = getTotalDownloads()[0].total
+          const failures = getTotalErrors()[0].total
+          const partials = getTotalPartials()[0].total
+          currentEvent.sender.send('queryFinished',
+                                    {
+                                      successes: successes,
+                                      failures: failures,
+                                      partials: partials})
           searchWorker = null
         } catch (error) {
-          
+          log.error(`Main: ${error}`)
         }
       }
     }
@@ -367,11 +391,9 @@ function createDownloadWorker(options) {
       createDownloadWorker(options)
     }
     
-    else if (msg.type === 'uncaughtException') {
-      log.error('Main: Excepcion en child process detectada. Enviando senal de fin.')
+    else if (msg.type === 'recorderNotLicensed') {
+      currentEvent.sender.send('recorderNotLicensed')
       worker.postMessage({type: 'end'})
-
-      createDownloadWorker(options)
     }
     
   })

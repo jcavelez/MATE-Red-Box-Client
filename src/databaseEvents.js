@@ -79,12 +79,8 @@ function createSchema() {
         }
     } catch (error) {
         log.error(`SQLite3: ${error}`)
-        try {
-            // Resetea la tabla cuando se inicia el programa.
-            db.prepare('DELETE FROM Grabaciones').run() // <----------------DELETE ON PRODUCTION??
-        } catch (error2) {
-            log.error(`SQLite3: ${error2}`)
-        }
+        clearRecordsTable()
+        
     }
 
     try {
@@ -109,6 +105,16 @@ function createSchema() {
           }
     } catch (error) {
         log.error(`SQLite3: ${error}`)
+    }
+}
+
+function clearRecordsTable() {
+    try {
+        log.info(`SQLite3: Limpiando tabla de grabaciones.`)
+        // Resetea la tabla cuando se inicia el programa o cuando se ehecuta una nueva búsqueda
+        db.prepare('DELETE FROM Grabaciones').run() // <----------------DELETE ON PRODUCTION??
+    } catch (error2) {
+        log.error(`SQLite3: ${error2}`)
     }
 }
 
@@ -140,7 +146,7 @@ function insertMany(columns, values) {
 
         transaction(values)
 
-        log.info('SQLite3: Insert succeeded')
+        log.info('SQLite3: Insert IDs succeeded')
     } catch (error) {
         log.error(`SQLite3: Insert ${error}`)
     }
@@ -167,7 +173,7 @@ function saveSearch(data) {
 
         //transaction(values)
 
-        log.info('SQLite3: Insert succeeded')
+        log.info('SQLite3: Insert Search succeeded')
     } catch (error) {
         log.error(`SQLite3: Insert ${error}`)
     }
@@ -193,7 +199,7 @@ function getRecordsReadyToDownload(top=1) {
         
         const select = db.prepare(query)
         const res = select.all()
-        log.info('SQLite3: Select Query succeeded')
+        log.info('SQLite3: Select Query Ready To Download succeeded')
         return res
         
     } catch (error) {
@@ -210,7 +216,7 @@ function getRecordsNoChecked(top=1) {
         
         const select = db.prepare(query)
         const res = select.all()
-        log.info('SQLite3: Select Query succeeded')
+        log.info('SQLite3: Select Query No Checked succeeded')
         return res
         
     } catch (error) {
@@ -231,7 +237,7 @@ function updateRecords(data, callID) {
             WHERE callID = ?`)
         
         update.run(values, callID)
-        log.info(`SQLite3: CallID ${callID} - Update succeeded`)
+        log.info(`SQLite3: CallID ${callID} - Update Record succeeded`)
 
     } catch (error){
         log.error(`SQLite3: CallID ${callID} - Update ${error}`)
@@ -249,7 +255,7 @@ function updateSearch(data, searchID) {
             WHERE searchID = ?`)
         log.info(update)
         update.run(values, searchID)
-        log.info(`SQLite3: CallID ${searchID} - Update succeeded`)
+        log.info(`SQLite3: CallID ${searchID} - Update Search succeeded`)
 
     } catch (error){
         log.error(`SQLite3: CallID ${searchID} - Update ${error}`)
@@ -275,7 +281,7 @@ function getExternalCallID(range, Extension) {
         
         const select = db.prepare(query)
         let newID = select.all()
-        log.info('SQLite3: Select Query succeeded')
+        log.info('SQLite3: Select Query External Call ID succeeded')
 
         if (newID.length > 0) {
             newID = newID[0].ExternalCallID
@@ -289,21 +295,51 @@ function getExternalCallID(range, Extension) {
     }
 }
 
-function getRPendingRecords() {
+function getTotalDownloads(){
     try {
-        let query = `SELECT *
+        let query = `SELECT count(callID) as total
                     FROM Grabaciones 
-                    WHERE idEstado = 0 OR idEstado = 1 OR idEstado = 2
-                    LIMIT 1`
+                    WHERE idEstado = 6`
         
         const select = db.prepare(query)
         const res = select.all()
-        log.info('SQLite3: Select Query succeeded')
+        log.info('SQLite3: Select Query Total Downloads succeeded')
         return res
-        
+                
     } catch (error) {
-        log.error(`SQLite3: ${error}`)
-        return 'error'
+        log.error(`SQLite3: Select ${error}`)
+    }
+}
+
+function getTotalErrors(){
+    try {
+        let query = `SELECT count(callID) as total
+                    FROM Grabaciones 
+                    WHERE idEstado = 7`
+        
+        const select = db.prepare(query)
+        const res = select.all()
+        log.info('SQLite3: Select Query Total Errors succeeded')
+        return res
+                
+    } catch (error) {
+        log.error(`SQLite3: Select ${error}`)
+    }
+}
+
+function getTotalPartials(){
+    try {
+        let query = `SELECT count(callID) as total
+                    FROM Grabaciones 
+                    WHERE idEstado != 6 AND idEstado !=7`
+        
+        const select = db.prepare(query)
+        const res = select.all()
+        log.info('SQLite3: Select Query Total Partials succeeded')
+        return res
+                
+    } catch (error) {
+        log.error(`SQLite3: Select ${error}`)
     }
 }
 
@@ -312,13 +348,17 @@ function getRPendingRecords() {
 module.exports = {
     createDatabase,
     createSchema,
+    clearRecordsTable,
     updateSearch,
     saveIDs,
     saveSearch,
     getRecordsNoProcesed,
     getRecordsNoChecked,
     getRecordsReadyToDownload,
+    getTotalDownloads,
+    getTotalErrors,
+    getTotalPartials,
     updateRecords,
-    getExternalCallID, 
-    getRPendingRecords
+    getExternalCallID,
     }
+
