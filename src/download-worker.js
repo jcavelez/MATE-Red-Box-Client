@@ -192,6 +192,11 @@ async function postDownloadTasks(callID, callData) {
     if (callData.idEstado === 4) {
         const dstFile = createNewFileName(callData, outputFormat)
         log.info(`PostDownloadTasks: CallID ${callID} - Nuevo nombre ${dstFile}`)
+
+        if (dstFile === ' error') {
+            parentPort.postMessage({type: 'update', callID: callID, callData: {idEstado: 7} })
+            return
+        }
         
         if (downloadOptions.outputFormat != 'wav') {
             log.info(`PostDownloadTasks: CallID ${callID} - Solicitud transcoding.`)

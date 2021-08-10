@@ -189,7 +189,7 @@ async function downloadAudio(IP, token, callID, savePath) {
     log.info(`Audio: CallID ${callID} - Descargando audio.`)
 
     let finalPath
-    let url = `${SERVER_URL.replace('<IP>', IP)}${CALL_AUDIO_URL.replace('<callID>', callID)}`
+    let url = `${SERVER_URL.replace('<IP>', IP)}${CALL_AUDIO_URL.replace('<callID>', '222')}`
     log.info(`Audio: ${options.method} ${url}`)
     try {
 

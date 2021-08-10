@@ -43,5 +43,27 @@ function createErrorLog (filePath) {
     return creation
 }
 
+function saveDownloadError(file, data) {
+    try {
+        fs.access(file, fs.constants.F_OK, (err) => {
+            log.info(`File System: ${file} ${err ? 'no existe' : 'existe'}`)
+            if (err) {
+                createErrorLog(file)
+            }
+            else {
+                fs.appendFileSync(file, data, (e) => {
+                    if (e) {
+                        log.error(`File System: Error abriendo archivo ${err}`)
+                    } else {
+                        log.info(`File System: Archivo correctamente ${file}`)
+                    }
+                })
+            }
+        })
+    } catch (exception) {
+        log.error(`File System: ${exception}`)
+    }
+}
 
-module.exports = { createErrorLog }
+
+module.exports = { createErrorLog, saveDownloadError }

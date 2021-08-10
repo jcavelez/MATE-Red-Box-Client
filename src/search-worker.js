@@ -36,8 +36,6 @@ parentPort.on('message', async (msg) => {
 const newSearch = async () => {
     log.info(`Worker Search ID ${threadId}: Iniciando busqueda`)
 
-    log.info(options)
-
     let searchStatus = await placeNewSearch(options, token)
   
     if(searchStatus.hasOwnProperty('error')) {

@@ -9,6 +9,7 @@ const devtools = require('./devtools')
 const log = require('electron-log')
 const { runLoginEvent, beginDownloadCycle, forceStopProcess, logout } = require('./download-cycle')
 const sleep = require('./sleep')
+const { setupErrors } = require('./handler-errors')
 
 console.log = log.log
 settings.configure({prettify: true})
@@ -67,6 +68,9 @@ function createLoginWindow () {
       preload: path.join(__dirname, 'preload.js')
     }
   })
+
+  setupErrors(loginWindow)
+
   loginWindow.loadURL(path.join(__dirname, './renderer/login.html'))
 
   loginWindow.once('ready-to-show', () => {
@@ -80,7 +84,6 @@ function createLoginWindow () {
     log.info(`Main: Enviando webContent 'loadLastLogin'`)
     loginWindow.webContents.send('loadLastLogin', lastLogin)
     loginWindow.show()
-    
   })
 }
 
@@ -100,6 +103,8 @@ function createWindow () {
     autoHideMenuBar: true,
     icon: path.join(__dirname, 'assets', 'icons', 'logo_small.png')
   })
+
+  setupErrors(win)
 
   win.loadFile(path.join(__dirname, 'renderer/index.html'))
 
@@ -182,15 +187,6 @@ ipcMain.on('loadPreferences', (event) => {
   }
 
   log.info('Main: Cargando opciones de configuracion de usuario. Archivo: ' + settings.file())
-  //Testing enviroment
-  // checkNewSettings('username', 'admin')
-  // checkNewSettings('password', 'recorder')
-  // checkNewSettings('lastRecorderIP', '192.168.221.128')
-
-  //EMTELCO settings
-  // checkNewSettings('username', 'descargas')
-  // checkNewSettings('password', 'descargas')
-  // checkNewSettings('lastRecorderIP', '10.3.6.132')
 
   checkNewSettings('client', 'EMTELCO')
   checkNewSettings('searchMode', 'EarliestFirst')
@@ -218,6 +214,7 @@ ipcMain.on('openExportOptions', (event) => {
     frame: false,
     show: true,
   })
+
   exportOptionsWindow.loadURL(`${path.join(__dirname, './renderer/export-settings.html')}`)
 
   log.info('Main: Ventana Opciones de Exportacion creada')
@@ -251,7 +248,7 @@ ipcMain.on('startDownload', async (event, options) => {
 })
 
 
-ipcMain.on('stop', (event) => {
+ipcMain.on('stop', () => {
   const IP = settings.getSync('lastRecorderIP')
-  forceStopProcess(event, IP)
+  forceStopProcess()
 })

@@ -8,24 +8,30 @@ log.transports.file.maxSize = 5242880
 log.transports.file.resolvePath = () => 'C:\\MATE\\Mate.log'
 
 function createNewFileName (callData, ext) {
-    let date = callData.StartDateTime.split(' ')[0].split('/')
-    let hour = callData.StartDateTime.split(' ')[1].replaceAll(' ', '_').replaceAll(':', '-')
-    hour = hour + '-' + callData.StartDateTime.split(' ')[2]
-    let newName = 
-        callData.Extension 
-        + '_' + callData.OtherParty 
-        + '_' + callData.AgentGroup 
-        + '_' + date[1] + '-' + date[0] + '-' + date[2] 
-        + '_' + hour 
-        + '_' + callData.ExternalCallID 
-        + '_' + callData.RBRCallGUID
-    const dir = path.dirname(callData.ruta)
-    const subdir = subfolderName(callData)
-    const newDir = path.join(dir, subdir)
-    makeSubdir(newDir)
-    const dstFile = path.join(newDir, `${newName}.${ext}`)
+    try {
+        let date = callData.StartDateTime.split(' ')[0].split('/')
+        let hour = callData.StartDateTime.split(' ')[1].replaceAll(' ', '_').replaceAll(':', '-')
+        hour = hour + '-' + callData.StartDateTime.split(' ')[2]
+        let newName = 
+            callData.Extension 
+            + '_' + callData.OtherParty 
+            + '_' + callData.AgentGroup 
+            + '_' + date[1] + '-' + date[0] + '-' + date[2] 
+            + '_' + hour 
+            + '_' + callData.ExternalCallID 
+            + '_' + callData.RBRCallGUID
+        const dir = path.dirname(callData.ruta)
+        const subdir = subfolderName(callData)
+        const newDir = path.join(dir, subdir)
+        makeSubdir(newDir)
+        const dstFile = path.join(newDir, `${newName}.${ext}`)
 
-    return dstFile
+        return dstFile
+
+    } catch(e) {
+        log.error(`Report Event: Creando nuevo nombre - ${e}`)
+        return 'error'
+    }
 }
 
 function subfolderName(callData) {
@@ -94,5 +100,7 @@ function saveReport(file, data) {
         log.error(`File System: ${exception}`)
     }
 }
+
+
 
 module.exports = { createNewFileName, createReport, saveReport }

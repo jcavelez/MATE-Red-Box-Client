@@ -9,7 +9,7 @@ const { placeNewSearch } = require('./recorderEvents.js')
 const { getResults } = require('./recorderEvents.js')
 const { getRecordsNoProcesed, getRecordsNoChecked, getRecordsReadyToDownload, updateRecords, getRPendingRecords, saveIDs, saveSearch
 } = require('./databaseEvents')
-const { createErrorLog } = require('./download-error-logs')
+const { createErrorLog, saveDownloadError } = require('./download-error-logs')
 const { Worker } = require('worker_threads')
 
 
@@ -358,13 +358,19 @@ function createDownloadWorker(options) {
     }
 
     else if (msg.type === 'error') {
-      log.info(`Main: ${msg.errorData.callID} - Guardando log error de descarga`)
-      const { saveReport } = require('./reportEvents.js')
+      log.info(`Main: ${msg.errorData.callID} - Guardando log de error de descarga`)
       const values = Object.values(msg.errorData).join(',') + '\n'
-      saveReport(errorLogPath, values)
+      saveDownloadError(errorLogPath, values)
     } 
     
     else if (msg.type === 'createNewWorker') {
+      createDownloadWorker(options)
+    }
+    
+    else if (msg.type === 'uncaughtException') {
+      log.error('Main: Excepcion en child process detectada. Enviando senal de fin.')
+      worker.postMessage({type: 'end'})
+
       createDownloadWorker(options)
     }
     
@@ -374,12 +380,11 @@ function createDownloadWorker(options) {
 }
 
 
-const forceStopProcess = (event) => {
+const forceStopProcess = () => {
   log.info(`Main: Senal stop recibida. Forzando la finalizacion de procesos.`)
   
-  event.sender.send('finishing')
-
   downloadRunning = false // Esto hara que la funcion ProcessPartialSearch detenga sus subprocesos pendientes
+  currentEvent.sender.send('finishing')
   
   renewToken()
 }
