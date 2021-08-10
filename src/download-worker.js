@@ -103,17 +103,6 @@ async function processCall(callData) {
     if (download.hasOwnProperty('error') || download == {}) {
         log.error(`Worker Download Audio ID ${threadId}: CallID ${callID} - ${download.error}`)
 
-        if (download.error == 'Internal error.') {
-            log.error(`Worker Download Audio ID ${threadId}: Deteniendo proceso`)
-            //Tiempo para que se recupere el REST API de la grabadora
-            await sleep(2000)
-            parentPort.postMessage({type: 'update', callID: callID, callData: {idEstado: 2} })
-            //tiempo para no bloquear la BD
-            await sleep(200)
-            parentPort.postMessage({type: "createNewWorker"})
-            process.exit()
-        }
-
         const msgUpdate =  {
             type: 'update',
             callID: callID,
@@ -146,9 +135,21 @@ async function processCall(callData) {
             }
         }
 
-        await sleep(500)
+        //await sleep(500)
 
         parentPort.postMessage(msgError)
+
+        if (download.error == 'Internal error.') {
+            log.error(`Worker Download Audio ID ${threadId}: Deteniendo proceso`)
+            //Tiempo para que se recupere el REST API de la grabadora
+            await sleep(3000)
+            parentPort.postMessage({type: 'update', callID: callID, callData: {idEstado: 2} })
+            //tiempo para no bloquear la BD
+            await sleep(200)
+            parentPort.postMessage({type: "createNewWorker"})
+            process.exit()
+        }
+
         
 
         if (download.error == 'RB_RS_NOT_LICENSED' || download.error == 'The authentication token is invalid.' ) {
