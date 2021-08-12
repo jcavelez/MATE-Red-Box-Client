@@ -1,6 +1,6 @@
 {
   "name": "MATERedBoxClient",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "productName": "MATERedBoxClient",
   "description": "Massive Downloader Client for Red Box Recorders",
   "author": "Compucom",
@@ -33,15 +33,20 @@
   },
   "devDependencies": {
     "cross-env": "^7.0.3",
-    "devtron": "^1.4.0",
     "electron": "^12.0.6",
     "electron-builder": "^22.11.7"
   },
   "build": {
     "appId": "MATERedBoxClient",
+    "asar": false,
+    "directories": {
+      "buildResources": "src/assets/icons"
+    },
     "mac": {
       "category": "enterprise"
     },
-    "asar": false
+    "win": {
+      "icon": "src/assets/icons/icon_black.ico"
+    }
   }
 }

@@ -1,6 +1,6 @@
 'use strict'
 
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog } = require('electron')
 const { Worker } = require('worker_threads')
 const settings = require('electron-settings')
 const path = require('path')
@@ -19,8 +19,10 @@ log.transports.file.resolvePath = () => 'C:\\MATE\\Mate.log'
 //TODO: log level in setting file.
 let loginWindow = null
 let win = null
+let appTray = null
+const icon = path.join(__dirname, 'assets', 'icons', 'icon_black.ico')
+let appIcon = nativeImage.createFromPath(icon)
 const databaseName = 'MATE.db'
-
 
 
 //asegurar que la aplicacion corra en una unica instancia
@@ -44,6 +46,7 @@ if (!gotTheLock) {
     createSchema()
     log.info('Main: Cargando ventana de Login')
     createLoginWindow()
+    
   })
 }
 
@@ -63,6 +66,7 @@ function createLoginWindow () {
     modal: false,
     frame: true,
     autoHideMenuBar: true,
+    icon: appIcon.resize({ width: 16 }),
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')
@@ -101,18 +105,34 @@ function createWindow () {
     maximizable: false,
     show: false,
     autoHideMenuBar: true,
-    icon: path.join(__dirname, 'assets', 'icons', 'logo_small.png')
+    icon: appIcon.resize({ width: 16 })
   })
 
   setupErrors(win)
 
   win.loadFile(path.join(__dirname, 'renderer/index.html'))
-
+  
   log.info(`Main: Preload file ${path.join(__dirname, 'preload.js')}`)
   log.info('Main: Ventana principal creada')
-  log.info('Main: Archivo contenido ventana principal cargado ' + path.join(__dirname, 'renderer/index.html'))
-}
+  log.info('Main: Archivo contenido ventana principal cargado ' + path.join(__dirname, 'renderer', 'index.html'))
 
+  let contextMenu = Menu.buildFromTemplate([
+    { label: 'Show App', click: () => win.show() },
+    { label: 'Quit', click: () => warningClose() }
+  ])
+
+  log.info(`Main: Creando icono tray.`)
+  appTray = new Tray(appIcon.resize({ width: 16 }))
+  appTray.setToolTip('MATE - Red Box Client')
+  appTray.setContextMenu(contextMenu)
+
+  appTray.on('double-click', () => win.show())
+
+  win.on('close', (event) => {
+    event.preventDefault()
+    win.hide()
+  })
+}
 
 function saveLoginData(loginData){
   settings.setSync('lastRecorderIP', loginData.recorder)
@@ -120,6 +140,24 @@ function saveLoginData(loginData){
   settings.setSync('password', loginData.password)
 }
 
+async function warningClose(){
+  log.info(`Main: Cerrando aplicacion`)
+  const options = {
+    message: '¿Desea cerrar completamente la aplicación e interrumpir las descargas activas?',
+    type: 'question',
+    buttons: ['Si', 'No'],
+    title: 'Cerrando...'
+  }
+
+  const resp = dialog.showMessageBoxSync(win, options)
+
+  if(resp === 0) {
+    forceStopProcess()
+    await sleep(4000) //esperar que los posibles procesos de descarga se cierren correctamente
+    win.destroy();
+    app.quit()
+  }
+}
 
 
 
@@ -127,14 +165,19 @@ function saveLoginData(loginData){
 //*******************EVENTOS ********************** */
 //************************************************* */
 
-app.on('window-all-closed', async () => {
-  log.info('Main: Event window-all-closed')
+
+app.on('window-all-closed', async (event) => {
+  log.info('Main: Event window-all-closed emitted')
   log.info('Main: Logging out')
   await logout(settings.getSync('lastRecorderIP'))
   if (process.platform !== 'darwin') {
     log.info('Main: Closing App')
     app.quit()
   }
+})
+
+app.on('will-quit', async () => {
+  log.info('Main: Event will-quit emitted')
 })
 
 // ............. Login Event ....................................
@@ -157,7 +200,6 @@ ipcMain.on('openMainWindow', () => {
 
 //..............Open Directory Event ...........................
 ipcMain.on('openDir', (event) => {
-  const { dialog } = require('electron');
   let dialogOptions = {
     title: "Seleccione una ubicación:",
     buttonLabel: 'Seleccionar esta carpeta',
@@ -249,6 +291,5 @@ ipcMain.on('startDownload', async (event, options) => {
 
 
 ipcMain.on('stop', () => {
-  const IP = settings.getSync('lastRecorderIP')
   forceStopProcess()
 })

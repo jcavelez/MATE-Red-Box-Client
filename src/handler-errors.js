@@ -38,9 +38,9 @@ function handleUnresponsive(win) {
     if (resp === 1) relaunchApp(win)
 }
 
-async function handleUncaughtException(win) {
+async function handleUncaughtException(win, err) {
 
-    log.error(`Main: Process uncaughtException event emitted - ${err}`)
+    log.error(`Main: Process uncaughtException event emitted - Error: ${err}`)
     
     const options = {
         message: 'Ocurrió un error inesperado. Informe al administrador del sistema e inicie su búsqueda nuevamente.',
@@ -75,7 +75,7 @@ function setupErrors(win) {
     win.on('unresponsive', () => { handleUnresponsive(win)
     })
 
-    process.on('uncaughtException', (err) => { handleUncaughtException(err)
+    process.on('uncaughtException', (err) => { handleUncaughtException(win, err)
     })
 
 }
