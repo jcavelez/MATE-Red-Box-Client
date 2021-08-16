@@ -139,11 +139,13 @@ async function processCall(callData) {
         //await sleep(500)
 
         parentPort.postMessage(msgError)
-
+        
+        //Eventos en los que es recomendable matar el proceso y crear uno nuevo
         if (download.error == 'Internal error.') {
             log.error(`Worker Download Audio ID ${threadId}: Deteniendo proceso`)
             //Tiempo para que se recupere el REST API de la grabadora
             await sleep(3000)
+            await logout()
             parentPort.postMessage({type: 'update', callID: callID, callData: {idEstado: 2} })
             //tiempo para no bloquear la BD
             await sleep(200)
@@ -151,21 +153,29 @@ async function processCall(callData) {
             process.exit()
         }
 
-        
-
-        if (download.error == 'The authentication token is invalid.') {
+        //Evento en el que se renueva el login, pero no se mata el proceso
+        else if (download.error == 'The authentication token is invalid.') {
             log.error(`Worker Download Audio ID ${threadId}: Renovando login`)
             await logout()
             const res = await login()
             await checkLogin(res)
             parentPort.postMessage({type: 'next'})
         }
-
-        if (download.error == 'RB_RS_NOT_LICENSED') {
+        
+        //Igual que en internal error, pero sin crear el nuevo worker.
+        //Main se encarga de enviar la senal de cierre del proceso y logout
+        else if (download.error == 'RB_RS_RECORDER_NOT_LICENSED') {
             log.error(`Worker Download Audio ID ${threadId}: Grabadora no licenciada. Eliminando worker`)
             parentPort.postMessage({type: 'update', callID: callID, callData: {idEstado: 2} })
-            await sleep(200)
+            await sleep(500)
             parentPort.postMessage({type: 'recorderNotLicensed'})
+        }
+        
+        //Evento en el que solo devolvemos la grabacion al estado anterior
+        else if (download.error == 'RB_RS_TRANSFER_ABORTED') {
+            parentPort.postMessage({type: 'update', callID: callID, callData: {idEstado: 2} })
+            await sleep(500)
+            parentPort.postMessage({type: 'next'})
         }
         
         return

@@ -20,7 +20,7 @@ log.transports.file.resolvePath = () => 'C:\\MATE\\Mate.log'
 let loginWindow = null
 let win = null
 let appTray = null
-const icon = path.join(__dirname, 'assets', 'icons', 'icon_black.ico')
+const icon = path.join(__dirname, 'assets', 'img', 'icon_black.ico')
 let appIcon = nativeImage.createFromPath(icon)
 const databaseName = 'MATE.db'
 
@@ -122,6 +122,7 @@ function createWindow () {
   ])
 
   log.info(`Main: Creando icono tray.`)
+  log.info(icon)
   appTray = new Tray(appIcon.resize({ width: 16 }))
   appTray.setToolTip('MATE - Red Box Client')
   appTray.setContextMenu(contextMenu)
@@ -152,10 +153,16 @@ async function warningClose(){
   const resp = dialog.showMessageBoxSync(win, options)
 
   if(resp === 0) {
-    forceStopProcess()
+    win.hide()
+    try {
+      forceStopProcess()
+    } catch (error) {
+      log.error(error)
+    }
+
     await sleep(4000) //esperar que los posibles procesos de descarga se cierren correctamente
-    win.destroy();
-    app.quit()
+    
+    win.destroy()
   }
 }
 
