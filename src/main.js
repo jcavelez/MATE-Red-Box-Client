@@ -132,6 +132,7 @@ function createWindow () {
 
   win.on('close', (event) => {
     event.preventDefault()
+    log.info(modalOpened) //<-------------------delete
     if (modalOpened) {
       win.hide()
     } else {
@@ -307,6 +308,6 @@ ipcMain.on('stop', () => {
 })
 
 ipcMain.on('modalStatus', (event, args) => {
-  log.info(`Main: Event recieved modalStatus=${args}`)
+  log.info(`Main: Event received modalStatus=${args}`)
   modalOpened = args
 })
