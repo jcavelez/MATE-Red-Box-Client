@@ -56,7 +56,6 @@ async function handleUncaughtException(win, err) {
 
     app.relaunch()
     app.exit(0)
-    
 }
 
 

@@ -24,6 +24,8 @@ const icon = path.join(__dirname, 'assets', 'img', 'icon_black.ico')
 let appIcon = nativeImage.createFromPath(icon)
 const databaseName = 'MATE.db'
 
+let modalOpened = false
+
 
 //asegurar que la aplicacion corra en una unica instancia
 const gotTheLock = app.requestSingleInstanceLock()
@@ -122,8 +124,7 @@ function createWindow () {
   ])
 
   log.info(`Main: Creando icono tray.`)
-  log.info(icon)
-  appTray = new Tray(appIcon.resize({ width: 16 }))
+  appTray = new Tray(appIcon.resize({ width: 32 }))
   appTray.setToolTip('MATE - Red Box Client')
   appTray.setContextMenu(contextMenu)
 
@@ -131,7 +132,11 @@ function createWindow () {
 
   win.on('close', (event) => {
     event.preventDefault()
-    win.hide()
+    if (modalOpened) {
+      win.hide()
+    } else {
+      win.destroy()
+    }
   })
 }
 
@@ -299,4 +304,9 @@ ipcMain.on('startDownload', async (event, options) => {
 
 ipcMain.on('stop', () => {
   forceStopProcess()
+})
+
+ipcMain.on('modalStatus', (event, args) => {
+  log.info(`Main: Event recieved modalStatus=${args}`)
+  modalOpened = args
 })

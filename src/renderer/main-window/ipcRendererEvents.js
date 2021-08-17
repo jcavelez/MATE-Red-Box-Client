@@ -1,8 +1,9 @@
 import { validateDate } from '../../assets/lib/validateDate.js'
 import { formatStartDate, formatEndDate } from '../../assets/lib/formatDate.js'
+import { ipcRenderer } from 'electron'
+
 
 let options = {}
-
 
 function loadPreferences() {
     window.api.send('loadPreferences')
@@ -92,6 +93,7 @@ function requestStartDownload(options) {
     
     console.log('request download, sending to ipc main')
     window.api.send('startDownload', options) 
+    ipcRenderer.send('modalStatus', document.getElementById("download-dialog").open)
 }
 
 function openExportPreferences() {
@@ -147,6 +149,7 @@ window.api.receive('getPreferences', (prefs) => {
     document.getElementById('end-hour').value = prefs.endTime.substring(8,10)
                                                 + ':' + 
                                                 prefs.endTime.substring(10,12)
+    ipcRenderer.send('modalStatus', document.getElementById("download-dialog").open)
 })
 
 
@@ -160,6 +163,7 @@ window.api.receive('recorderSearching', () => {
     m1.innerHTML = 'Ejecutando búsqueda'
     m2.innerHTML = 'Por favor espere'
     continueBtn.style.display = 'none'
+    ipcRenderer.send('modalStatus', document.getElementById("download-dialog").open)
 })
 
 window.api.receive('recorderDownloading', () => {
@@ -170,6 +174,7 @@ window.api.receive('recorderDownloading', () => {
     gif.src = "../assets/img/downloading.gif"
     m1.innerHTML = 'Descarga de Audios en Curso'
     m2.innerHTML = 'por favor espere'
+    ipcRenderer.send('modalStatus', document.getElementById("download-dialog").open)
 })
 
 window.api.receive('recorderLoginError', (error) => {
@@ -182,7 +187,7 @@ window.api.receive('recorderLoginError', (error) => {
     m1.innerHTML = 'Error de Comunicación con el Grabador'
     m2.innerHTML = error
     btn.innerHTML = 'Cerrar'
-
+    ipcRenderer.send('modalStatus', document.getElementById("download-dialog").open)
 })
 
 window.api.receive('finishing', () => {
@@ -193,17 +198,19 @@ window.api.receive('finishing', () => {
     gif.src = "../assets/img/finishing.png"
     m1.innerHTML = 'Finalizando Descarga'
     m2.innerHTML = 'terminando procesos pendientes'
+    ipcRenderer.send('modalStatus', document.getElementById("download-dialog").open)
+
 })
 
 window.api.receive('queryFinished', (data) => {
     console.log('queryfinished')
     const notification = document.getElementById("notification")
-    const modal = document.getElementById("download-dialog");
+    const modal = document.getElementById("download-dialog")
     modal.close()
-    notification.innerText =    `Descarga Terminada.
-                                Descargas: ${data.successes}. Errores: ${data.failures}. Pendientes: ${data.partials}`
+    notification.innerText =    `Descarga Terminada. Descargas exitosas: ${data.successes}. Errores: ${data.failures}. Pendientes: ${data.partials}`
     notification.opened = true
     document.getElementById('download-button').addEventListener('click', openStatusDialog)
+    ipcRenderer.send('modalStatus', modal.open)
 })
 
 window.api.receive('searchError', (msg) => {
@@ -214,6 +221,7 @@ window.api.receive('searchError', (msg) => {
     notification.innerText = 'Error ejecutando busqueda: ' + msg.error
     notification.opened = true
     document.getElementById('download-button').addEventListener('click', openStatusDialog)
+    ipcRenderer.send('modalStatus', modal.open)
 })
 
 window.api.receive('queryInterrupted', (data) => {
@@ -224,6 +232,7 @@ window.api.receive('queryInterrupted', (data) => {
     notification.innerText =    `Descarga Interrumpida. Descargas: ${data.successes}. Errores: ${data.failures}.  Pendientes: ${data.partials}`
     notification.opened = true
     document.getElementById('download-button').addEventListener('click', openStatusDialog)
+    ipcRenderer.send('modalStatus', modal.open)
 })
 
 window.api.receive('recorderNotLicensed', () => {
@@ -242,7 +251,9 @@ window.api.receive('recorderNotLicensed', () => {
         m2.innerHTML = 'por favor espere'
         continueBtn.style.display = 'none'
     })
+    ipcRenderer.send('modalStatus', document.getElementById("download-dialog").open)
 })
+
 
 export { openDir, loadPreferences, requestStartDownload, stopDownloadProccess, openExportPreferences, openStatusDialog } 
 
