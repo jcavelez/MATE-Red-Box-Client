@@ -251,8 +251,8 @@ window.api.receive('recorderNotLicensed', () => {
         m1.innerHTML = 'Descarga de Audios en Curso'
         m2.innerHTML = 'por favor espere'
         continueBtn.style.display = 'none'
+        window.api.send('modalStatus', true)
     })
-    window.api.send('modalStatus', true)
 })
 
 

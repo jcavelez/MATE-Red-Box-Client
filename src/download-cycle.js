@@ -405,8 +405,8 @@ function createDownloadWorker(options) {
 const forceStopProcess = () => {
   log.info(`Main: Senal stop recibida. Forzando la finalizacion de procesos.`)
   
-  downloadRunning = false // Esto hara que la funcion ProcessPartialSearch detenga sus subprocesos pendientes
   currentEvent.sender.send('finishing')
+  downloadRunning = false // Esto hara que la funcion ProcessPartialSearch detenga sus subprocesos pendientes
   
   renewToken()
 }
