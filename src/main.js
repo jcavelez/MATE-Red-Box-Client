@@ -107,7 +107,8 @@ function createWindow () {
     maximizable: false,
     show: false,
     autoHideMenuBar: true,
-    icon: appIcon.resize({ width: 16 })
+    icon: appIcon.resize({ width: 16 }),
+    darkTheme: true
   })
 
   setupErrors(win)
@@ -132,7 +133,7 @@ function createWindow () {
 
   win.on('close', (event) => {
     event.preventDefault()
-    log.info(modalOpened) //<-------------------delete
+    //log.info(modalOpened) //<-------------------delete
     if (modalOpened) {
       win.hide()
     } else {
@@ -260,14 +261,20 @@ ipcMain.on('loadPreferences', (event) => {
 //............. Open Export Options Window ...............
 ipcMain.on('openExportOptions', (event) => {
   const exportOptionsWindow = new BrowserWindow({
-    width: 530,
-    height: 470,
+    width: 435,
+    height: 500,
+    resizable: false,
     title: 'Preferencias',
-    center: true,
-    parent: win,
-    modal: true,
+    //center: true,
     frame: false,
+    parent: win,
+    hasShadow: true,
+    darkTheme: true,
+    modal: true,
     show: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js')
+    }
   })
 
   exportOptionsWindow.loadURL(`${path.join(__dirname, './renderer/export-settings.html')}`)
@@ -275,6 +282,7 @@ ipcMain.on('openExportOptions', (event) => {
   log.info('Main: Ventana Opciones de Exportacion creada')
   
   exportOptionsWindow.once('ready-to-show', () => {
+    ipcMain.send()
     exportOptionsWindow.show()
     exportOptionsWindow.focus()
   })
@@ -308,6 +316,15 @@ ipcMain.on('stop', () => {
 })
 
 ipcMain.on('modalStatus', (event, args) => {
-  log.info(`Main: Event received modalStatus=${args}`)
+  //log.info(`Main: Message modalStatus received - ${args}`)
   modalOpened = args
+})
+
+ipcMain.on('updatePreferences', (event, prefs) => {
+  log.info(`Main: Message updatePreferences received`)
+  for (const key in prefs) {
+    log.info(`Main: Guardando ${key} = ${prefs[key]}`)
+    settings.setSync(key, prefs[key])
+  }
+  log.info(`Main: Preferencias actualizadas correctamente.`) 
 })
