@@ -37,7 +37,8 @@ parentPort.on('message', async (msg) => {
             await processCall(msg.callData) 
         } else {
             log.info(`Worker Download Audio ID ${threadId}: Call ID ${ID} - No hay token disponible para la descarga.`)
-            await login()
+            const res = await login()
+            await checkLogin(res)
             parentPort.postMessage({type: 'update', callID: ID, callData: {idEstado: 2} })
             await sleep(200)
         }
