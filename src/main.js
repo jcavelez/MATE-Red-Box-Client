@@ -326,5 +326,5 @@ ipcMain.on('updatePreferences', (event, prefs) => {
     log.info(`Main: Guardando ${key} = ${prefs[key]}`)
     settings.setSync(key, prefs[key])
   }
-  log.info(`Main: Preferencias actualizadas correctamente.`)
+  log.info(`Main: Preferencias actualizadas correctamente.`) 
 })
