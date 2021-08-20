@@ -18,8 +18,8 @@ function createNewFileName (callData, ext) {
             + '_' + callData.OtherParty 
             + '_' + date[1] + '-' + date[0] + '-' + date[2] 
             + '_' + hour 
-            //+ '_' + callData.ExternalCallID 
-            //+ '_' + callData.RBRCallGUID
+            + '_' + callData.ExternalCallID 
+            + '_' + callData.RBRCallGUID
         const dir = path.dirname(callData.ruta)
         const subdir = subfolderName(callData)
         const newDir = path.join(dir, subdir)

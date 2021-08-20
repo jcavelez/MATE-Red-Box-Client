@@ -160,6 +160,8 @@ async function processCall(callData) {
             await logout()
             const res = await login()
             await checkLogin(res)
+            parentPort.postMessage({type: 'update', callID: callID, callData: {idEstado: 2} })
+            await sleep(500)
             parentPort.postMessage({type: 'next'})
         }
         
