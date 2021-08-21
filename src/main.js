@@ -299,6 +299,11 @@ ipcMain.on('startDownload', async (event, options) => {
     settings.setSync(property, options[property])
     log.info(`Main: Guardando en settings {'${property}: ${options[property]}}`)
   }
+  log.info(options)
+
+  if (!options.hasOwnProperty('extension')) {
+    settings.unsetSync('extension')
+  }
 
   if (!options.hasOwnProperty('group')) {
     settings.unsetSync('group')

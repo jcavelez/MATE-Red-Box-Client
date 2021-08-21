@@ -1,8 +1,8 @@
 import { validateDate } from '../../assets/lib/validateDate.js'
 import { formatStartDate, formatEndDate } from '../../assets/lib/formatDate.js'
 
-
 let options = {}
+
 
 function loadPreferences() {
     window.api.send('loadPreferences')
@@ -13,12 +13,15 @@ function openDir() {
 }
 
 function openStatusDialog(ev) {
+    options = {}
     const startDateInput = document.getElementById('start-date')
     const startHourInput = document.getElementById('start-hour')
     const endDateInput = document.getElementById('end-date')
     const endHourInput = document.getElementById('end-hour')
     const groupInput = document.getElementById('input-group')
     const groupSwitch = document.getElementById('switch-group')
+    const extensionInput = document.getElementById('input-extension')
+    const extensionSwitch = document.getElementById('switch-extension')
 
     const validatePath = () =>{
 
@@ -44,8 +47,20 @@ function openStatusDialog(ev) {
     const getSearchFields =() => {
         options.startTime = formatStartDate(startDateInput.value, startHourInput.value)
         options.endTime = formatEndDate(endDateInput.value, endHourInput.value)
-        if (groupSwitch.toggled) {
-            options.group = groupInput.value
+        
+        console.log('extensionSwitch.toggled ' + extensionSwitch.toggled)
+        if (extensionSwitch.toggled && extensionInput.value.trim() != '') {
+            let extensions = extensionInput.value.split(',')
+            extensions = extensions.map(ext => ext.trim())
+            options.extension = extensions.filter(ext => ext != '')
+            console.log(options.extension)
+        }
+
+        if (groupSwitch.toggled && groupInput.value.trim() != '') {
+            let groups = groupInput.value.split(',')
+            groups = groups.map(gr => gr.trim())
+            options.group = groups.filter(gr => gr != '')
+            console.log(options.group)
         }
     }
     
@@ -61,7 +76,7 @@ function openStatusDialog(ev) {
     
             return true
         } else {
-            notify('La fecha que ingreso no es válida ')
+            notify('La fecha que ingresó no es válida')
             return false
         }
     }
@@ -78,6 +93,7 @@ function openStatusDialog(ev) {
     const valid = validateForm()
     if (valid) {
         getSearchFields()
+        console.log(options)
         requestStartDownload(options)
     }
 }
@@ -92,7 +108,7 @@ function requestStartDownload(options) {
     
     console.log('request download, sending to ipc main')
     window.api.send('startDownload', options) 
-    window.api.send('modalStatus', document.getElementById("download-dialog").open)
+    window.api.send('modalStatus', true)
 }
 
 function openExportPreferences() {

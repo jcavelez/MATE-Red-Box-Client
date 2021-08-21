@@ -91,16 +91,22 @@ async function placeNewSearch(opt, token) {
         'startTime': opt.startTime,
         'endTime': opt.endTime
     }
-    if (opt.hasOwnProperty('group')) {
-        opts.criteriaList = [
-            {
-                'fieldName': 'AgentGroup',
-                'fieldData': opt.group
-            }
+    opts.criteriaList = []
 
-        ]
-        log.info('opts')
+    if (opt.hasOwnProperty('extension')) {
+        
+        opt.extension.map((ext) => {
+            opts.criteriaList.push({'fieldName': 'Extension','fieldData': ext})
+        })
     }
+
+    if (opt.hasOwnProperty('group')) {
+        
+        opt.group.map((group) => {
+            opts.criteriaList.push({'fieldName': 'AgentGroup','fieldData': group})
+        })
+    }
+
     await fetchData('POST', url, header, opts)
             .then((res) => {
                 log.info('Search: Procesando busqueda.')
