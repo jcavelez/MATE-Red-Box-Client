@@ -35,21 +35,37 @@ parentPort.on('message', async (msg) => {
 
 const newSearch = async () => {
     log.info(`Worker Search ID ${threadId}: Iniciando busqueda`)
-
+    
     let searchStatus = await placeNewSearch(options, token)
-  
+
     if(searchStatus.hasOwnProperty('error')) {
       log.error(`Worker Search ID ${threadId}: Error de busqueda recibido. Enviando a Renderer `)
       // -> currentEvent.sender.send('searchError', {error: searchStatus.error})
+      options.status = 'complete'
+      parentPort.postMessage({type: 'error', error: searchStatus.error})
       return
     }
-    log.info(`Worker Search ID ${threadId}: Estado de busqueda recibido del grabador. 'Results in range: ${searchStatus}'`)
+
+    log.info(`Worker Search ID ${threadId}: Estado de busqueda recibido del grabador. Estado: ${searchStatus.statusShort}`)
+
+
+    if (searchStatus.hasOwnProperty('resultsFound')) {
+      if(searchStatus.resultsFound == '0') {
+        options.status = 'complete'
+        parentPort.postMessage({type: 'error', error: 'Busqueda sin resultados'})
+        return
+      }
+    }
+
+    if(searchStatus.hasOwnProperty('error') || )
+    
     
     //se considera busqueda incompleta mientras placeNewSearch devuelva 
     //menos de 1000 resultados de acuerdo al API
     if (options.status === 'incomplete') {
       log.info(`Worker Search ID ${threadId}: Descargando IDs'`)
       const newSearchResults = await getResults(options.lastRecorderIP, token)
+
       if(newSearchResults) {
         log.info(`Worker Search ID ${threadId}: Array de IDs recibido'`)
         options.resultsToSkip += newSearchResults.length
@@ -57,16 +73,6 @@ const newSearch = async () => {
         log.info(`Worker Search ID ${threadId}:Guardando resultados en BD`)
     
         parentPort.postMessage({type: 'results', IDs: IDs})
-  
-        
-        // if(newSearchResults.length == 1000) {
-        //   log.info(`Main: Busqueda no completada. Ejecutando nueva busqueda`)
-        //   searchStatus = await placeNewSearch(options, currentToken)
-        //   log.info(`Main: ${searchStatus} Resultados`)
-        // } else {
-        //   options.status = 'complete'
-        //   log.info(`Main: Busqueda completada`)
-        // }
   
       } else {
           options.status = 'complete'

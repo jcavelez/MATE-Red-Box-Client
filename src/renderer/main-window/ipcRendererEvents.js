@@ -212,7 +212,7 @@ window.api.receive('finishing', () => {
     const m2 = document.getElementById("messages-small")
     gif.src = "../assets/img/finishing.png"
     m1.innerHTML = 'Finalizando Descarga'
-    m2.innerHTML = 'terminando procesos pendientes'
+    m2.innerHTML = 'Terminando procesos pendientes'
     window.api.send('modalStatus', true)
 
 })
@@ -227,7 +227,6 @@ window.api.receive('queryFinished', (data) => {
     notification.opened = true
     document.getElementById('download-button').addEventListener('click', openStatusDialog)
     window.api.send('modalStatus', false)
-    console.log(modal.open)
 })
 
 window.api.receive('searchError', (msg) => {
@@ -269,6 +268,12 @@ window.api.receive('recorderNotLicensed', () => {
         continueBtn.style.display = 'none'
         window.api.send('modalStatus', true)
     })
+})
+
+window.api.receive('searchUpdate', (data) => {
+    console.log(data)
+    const m2 = document.getElementById("messages-small")
+    m2.innerHTML = `Total: ${data.total} - Descargados: ${data.successes}`
 })
 
 

@@ -1,4 +1,4 @@
-const { webContents } = require('electron')
+const { webContents, ipcMain } = require('electron')
 const log = require('electron-log')
 const path = require('path')
 const sleep = require('./sleep.js')
@@ -12,11 +12,13 @@ const { getRecordsNoProcesed,
         getTotalDownloads,
         getTotalErrors,
         getTotalPartials,
+        getTotalRows,
         updateRecords,
         saveIDs,
         saveSearch } = require('./databaseEvents')
 const { createErrorLog, saveDownloadError } = require('./download-error-logs')
 const { Worker } = require('worker_threads')
+const ipcTransportFactory = require('electron-log/src/transports/ipc')
 
 
 log.transports.file.level = 'info'
@@ -180,6 +182,9 @@ const processPartialSearch = async (options) => {
     } else {
       log.info(`Main: Descarga parcial activa. Esperando 1 segundos.`)
       await sleep(1000)
+      const downloads = getTotalDownloads()[0].total
+      const total = getTotalRows()[0].total
+      currentEvent.sender.send('searchUpdate', {successes: downloads, total: total})
     }
   }
 
@@ -195,9 +200,9 @@ const processPartialSearch = async (options) => {
       failures: failures,
       partials: partials
   }
-  currentEvent.sender.send('queryInterrupted', data)
   tempWorkers.forEach((tempWorker) => tempWorker.postMessage({type: 'end'}))
   await sleep(500)
+  currentEvent.sender.send('queryInterrupted', data)
 }
 
 
@@ -249,6 +254,13 @@ const createSearchWorker = async (options) => {
 
     else if (msg.type === 'complete') {
       log.info('Main: Busqueda terminada. Finalizando proceso.')
+      searchWorker.postMessage({type: 'end'})
+      searchWorker = null
+    }
+
+    else if (msg.type === 'error') {
+      log.info('Main: Enviando error a Renderer')
+      currentEvent.sender.send('searchError', { error: msg.error })
       searchWorker.postMessage({type: 'end'})
       searchWorker = null
     }

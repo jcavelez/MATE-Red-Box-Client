@@ -127,12 +127,11 @@ async function placeNewSearch(opt, token) {
         await sleep(2000)
     } 
     
-    if(searchStatus.statusShort === 'Complete') {
-        log.info(`Search: Busqueda completada. ${searchStatus.resultsFound} resultados encontrados. ${searchStatus.resultsInRange} resultados en rango`)
-        return searchStatus.resultsInRange
-    } else  {
-        return searchStatus
-    }
+    log.info(`Search: Busqueda terminada. ${searchStatus.resultsFound} resultados encontrados.`)
+    //log.info(searchStatus)
+
+    return searchStatus
+    
 }
 
 async function getResults(IP, token) {

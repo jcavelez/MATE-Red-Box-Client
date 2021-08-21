@@ -322,7 +322,7 @@ ipcMain.on('stop', () => {
 })
 
 ipcMain.on('modalStatus', (event, data) => {
-  log.info(`Main: Message modalStatus received - ${data}`)
+  //log.info(`Main: Message modalStatus received - ${data}`)
   modalOpened = data
 })
 

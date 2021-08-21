@@ -343,6 +343,21 @@ function getTotalPartials(){
     }
 }
 
+function getTotalRows(){
+    try {
+        let query = `SELECT count(callID) as total
+                    FROM Grabaciones `
+        
+        const select = db.prepare(query)
+        const res = select.all()
+        log.info('SQLite3: Select Query Total Rows succeeded')
+        return res
+                
+    } catch (error) {
+        log.error(`SQLite3: Select ${error}`)
+    }
+}
+
 
 
 module.exports = {
@@ -358,6 +373,7 @@ module.exports = {
     getTotalDownloads,
     getTotalErrors,
     getTotalPartials,
+    getTotalRows,
     updateRecords,
     getExternalCallID,
     }
