@@ -317,12 +317,13 @@ ipcMain.on('startDownload', async (event, options) => {
 
 
 ipcMain.on('stop', () => {
+  log.info(`Main: Message stop received`)
   forceStopProcess()
 })
 
-ipcMain.on('modalStatus', (event, args) => {
-  //log.info(`Main: Message modalStatus received - ${args}`)
-  modalOpened = args
+ipcMain.on('modalStatus', (event, data) => {
+  log.info(`Main: Message modalStatus received - ${data}`)
+  modalOpened = data
 })
 
 ipcMain.on('updatePreferences', (event, prefs) => {

@@ -197,7 +197,7 @@ const processPartialSearch = async (options) => {
   }
   currentEvent.sender.send('queryInterrupted', data)
   tempWorkers.forEach((tempWorker) => tempWorker.postMessage({type: 'end'}))
-  await sleep(1000)
+  await sleep(500)
 }
 
 
@@ -227,10 +227,10 @@ const createSearchWorker = async (options) => {
         currentEvent.sender.send('recorderSearching')
       } else {
         try {
+          searchWorker.postMessage({type: 'end'})
           log.info('Main: Busqueda terminada. Finalizando procesos.')
           await sleep(2000)
           currentEvent.sender.send('finishing')
-          searchWorker.postMessage({type: 'end'})
           await sleep(2000)
           const successes = getTotalDownloads()[0].total
           const failures = getTotalErrors()[0].total
@@ -248,7 +248,7 @@ const createSearchWorker = async (options) => {
     }
 
     else if (msg.type === 'complete') {
-      log.info('Main: Busqueda termianda. Finalizando proceso.')
+      log.info('Main: Busqueda terminada. Finalizando proceso.')
       searchWorker.postMessage({type: 'end'})
       searchWorker = null
     }

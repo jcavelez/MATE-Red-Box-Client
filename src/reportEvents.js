@@ -60,7 +60,7 @@ function createReport (filePath, startDateTime, headers) {
     //const groupPosition = filePath.findIndex(element => element === group)
     let reportFolder = filePath.slice(0, -2).join('\\')
     let date = startDateTime.split(' ')[0].split('/')
-    let reportName = date[1] + '-' + date[0] + '-' + date[2] + '.csv'
+    let reportName = date[0] + '-' + date[1] + '-' + date[2] + '.csv'
     const reportPath = path.join(reportFolder, reportName)
 
     const creation = new Promise((resolve, reject) => {
