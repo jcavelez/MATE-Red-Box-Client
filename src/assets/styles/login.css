@@ -111,6 +111,12 @@ x-button:hover {
 
 #notification {
     color: rgb(245, 245, 245);
+    width: 95%;
+    justify-content: center;
+}
+
+#notification[opened] {
+    display: flex;
 }
 
 .modal { 

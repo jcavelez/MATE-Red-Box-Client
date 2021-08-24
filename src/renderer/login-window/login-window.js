@@ -20,6 +20,7 @@ loginBtn.addEventListener('click', sendForm)
 
 
 async function loadLastLogin() {
+    
     const lastLogin = await window.api.invoke('loadLastLogin')
     console.log(lastLogin)
 
@@ -70,7 +71,7 @@ function validateIPAddress(inputText) {
 window.api.receive('loginAlert', (msg) => {
     console.log('loginAlert')
     modal.classList.remove('is-visible')
-    notification.innerHTML = msg
+    notification.innerHTML = msg == 'system ETIMEDOUT' ? 'No hay conexión con la grabadora' : msg
     notification.opened = true
     
     if(msg === 'Login exitoso') {

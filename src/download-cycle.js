@@ -130,22 +130,8 @@ const beginDownloadCycle = async (event, options) => {
 
   clearRecordsTable()
 
-  const searchData = {
-    lastRecorderIP: options.lastRecorderIP,
-    client: options.client,
-    username: options.username,
-    startTime: options.startTime,
-    endTime: options.endTime,
-    Extension: options.hasOwnProperty('extension') ? options.extension.join(',') : null,
-    AgentGroup: options.hasOwnProperty('group') ? options.group : null,
-    searchMode: options.searchMode,
-    resultsToSkip: 0,
-    downloadDirectory: options.downloadPath
-  }
-
-  saveSearch(searchData)
-
-  currentEvent = event 
+  currentEvent = event
+   
   log.info(`Main: Iniciando busqueda`)
 
   try {
@@ -371,7 +357,7 @@ const createDownloadWorkers = async (options) => {
 function createDownloadWorker(options) {
   log.info('Main: Creando nuevo download worker.')
   const workerURL = `${path.join(__dirname, 'download-worker.js')}`
-  options.token = currentToken
+  //options.token = currentToken
   const data = { workerData: { options } }
   const worker = new Worker(workerURL, data) 
 

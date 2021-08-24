@@ -4,36 +4,48 @@ import { enableChildren } from './frontend.js'
 
 let options = {}
 
+async function loadCurrentLogin() {
+    const currentLogin = await window.api.invoke('loadLastLogin')
+    console.log(currentLogin)
 
-async function loadLastSearch() {
-    const lastSearch = await window.api.invoke('loadLastSearch')
-    console.log(lastSearch)
-    
     const replaceText = (selector, text) => {
         const element = document.getElementById(selector)
         if (element) element.innerText = text
     }
+    
+    replaceText('username', `[${currentLogin.username}]`)
+    replaceText('recorder', currentLogin.lastRecorderIP)
+}
 
-    replaceText('username', `[${lastSearch.username}]`)
-    replaceText('recorder', lastSearch.lastRecorderIP)
+async function loadLastSearch() {
+    const lastSearch = await window.api.invoke('loadLastSearch')
+    console.log(lastSearch)
 
-    document.getElementById('download-section-input').value = lastSearch.downloadDirectory
-    document.getElementById('start-date').value = lastSearch.startTime.substring(6,8) + 
-                                                '/'+ 
-                                                lastSearch.startTime.substring(4,6) +
-                                                '/' +
-                                                lastSearch.startTime.substring(0,4) 
-    document.getElementById('start-hour').value = lastSearch.startTime.substring(8,10)
-                                                + ':' + 
-                                                lastSearch.startTime.substring(10,12)
-    document.getElementById('end-date').value = lastSearch.endTime.substring(6,8) +
-                                                '/' + 
-                                                lastSearch.endTime.substring(4,6) +
-                                                '/' +
-                                                lastSearch.endTime.substring(0,4)
-    document.getElementById('end-hour').value = lastSearch.endTime.substring(8,10)
-                                                + ':' + 
-                                                lastSearch.endTime.substring(10,12)
+    if(lastSearch.downloadDirectory) {
+        document.getElementById('download-section-input').value = lastSearch.downloadDirectory
+    }
+
+    if (lastSearch.startTime) {
+        document.getElementById('start-date').value = lastSearch.startTime.substring(6,8) + 
+                                                    '/'+ 
+                                                    lastSearch.startTime.substring(4,6) +
+                                                    '/' +
+                                                    lastSearch.startTime.substring(0,4) 
+        document.getElementById('start-hour').value = lastSearch.startTime.substring(8,10)
+                                                    + ':' + 
+                                                    lastSearch.startTime.substring(10,12)
+    }
+
+    if (lastSearch.endTime) {
+        document.getElementById('end-date').value = lastSearch.endTime.substring(6,8) +
+        '/' + 
+                                                    lastSearch.endTime.substring(4,6) +
+                                                    '/' +
+                                                    lastSearch.endTime.substring(0,4)
+        document.getElementById('end-hour').value = lastSearch.endTime.substring(8,10)
+                                                    + ':' + 
+                                                    lastSearch.endTime.substring(10,12)
+    }
 
     if(lastSearch.Extension) {
         document.getElementById('switch-extension').toggled = true
@@ -148,6 +160,8 @@ function requestStartDownload(options) {
     
     console.log('request download, sending to ipc main')
     window.api.send('startDownload', options) 
+    console.log('enviando busqueda')
+    console.log(options)
     window.api.send('modalStatus', true)
 }
 
@@ -287,5 +301,5 @@ window.api.receive('searchUpdate', (data) => {
 })
 
 
-export { openDir, loadLastSearch, requestStartDownload, stopDownloadProccess, openExportPreferences, openStatusDialog } 
+export { openDir, loadLastSearch, loadCurrentLogin, requestStartDownload, stopDownloadProccess, openExportPreferences, openStatusDialog } 
 

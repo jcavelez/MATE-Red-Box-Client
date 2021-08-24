@@ -4,7 +4,7 @@ const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog } = require
 const { Worker } = require('worker_threads')
 const settings = require('electron-settings')
 const path = require('path')
-const { createDatabase, createSchema, saveSessionSettings, getLastLogin, getLastSearch} = require('./databaseEvents')
+const { createDatabase, createSchema, saveSessionSettings, getLastLogin, getLastSearch, saveSearch} = require('./databaseEvents')
 const devtools = require('./devtools')
 const log = require('electron-log')
 const { runLoginEvent, beginDownloadCycle, forceStopProcess, logout } = require('./download-cycle')
@@ -134,24 +134,6 @@ function createWindow () {
   })
 }
 
-function saveLoginData(loginData){
-  //settings.setSync('lastRecorderIP', loginData.recorder)
-  settings.setSync('username', loginData.username)
-  //settings.setSync('password', loginData.password)
-
-  saveSessionSettings(loginData.username, {
-    lastRecorderIP: loginData.recorder,
-    lastPassword: loginData.password
-  })
-}
-
-function clearLoginData(username) {
-  settings.setSync('username', '')
-  saveSessionSettings(username, {
-    lastRecorderIP: '',
-    lastPassword: ''
-  })
-}
 
 async function warningClose(){
   log.info(`Main: Cerrando aplicacion`)
@@ -188,7 +170,7 @@ function createDefaultSettings() {
 
     log.info('Main: Creando configuracion por defecto. Archivo: ' + settings.file())
 
-    checkNewSettings('client', 'EMTELCO')
+    //checkNewSettings('client', 'EMTELCO')
     checkNewSettings('searchMode', 'EarliestFirst')
     checkNewSettings('startTime', '20210531000000')
     checkNewSettings('endTime', '20210531235959')
@@ -196,8 +178,9 @@ function createDefaultSettings() {
     checkNewSettings('report', 'yes')
     checkNewSettings('overwrite', 'yes')
     checkNewSettings('parallelDownloads', 1)
-    checkNewSettings('downloadDirectory', 'C:\\')
+    //checkNewSettings('downloadDirectory', 'C:\\')
     checkNewSettings('logLevel', 'INFO')
+    checkNewSettings('rememberLastSession', 'no')
 }
 
 
@@ -223,11 +206,16 @@ app.on('will-quit', async () => {
 
 // ............. Login Event ....................................
 ipcMain.on('login', async (event, loginData) => {
-  if(loginData.saveData) {
-    saveLoginData(loginData)
-  } else {
-    clearLoginData(loginData.username)
-  }
+  settings.setSync('lastRecorderIP', loginData.recorder)
+  settings.setSync('username', loginData.username)
+
+  loginData.saveData ? settings.setSync('rememberLastSession', 'yes') : settings.setSync('rememberLastSession', 'no')
+  
+  saveSessionSettings(loginData.username, {
+    lastRecorderIP: loginData.recorder,
+    lastPassword: loginData.password
+  })
+
   await runLoginEvent(event, loginData)
 })
 
@@ -265,9 +253,9 @@ ipcMain.on('openDir', (event) => {
 ipcMain.handle('loadLastSearch', (event) => {
   log.info('Main: loadLastSearch event recieved')
   
-  let lastSearch = getLastSearch(settings.getSync('username'))
+  let lastSearch = { ...getLastSearch(settings.getSync('username')) }
   
-  console.log(lastSearch)
+  //console.log(lastSearch)
   
  return lastSearch
 })
@@ -276,14 +264,15 @@ ipcMain.handle('loadLastSearch', (event) => {
 
 ipcMain.handle('loadLastLogin', (event) => {
   let lastLogin = {}
-  const lastUsername = settings.getSync('username')
+  const remember = settings.hasSync('rememberLastSession') ? settings.getSync('rememberLastSession') : 'no'
 
-  if (lastUsername) {
-    lastLogin = getLastLogin(settings.getSync('username'))
+  if (remember == 'yes' && settings.hasSync('username')) {
+    lastLogin = {  ...getLastLogin(settings.getSync('username'))}
   }
 
   log.info(`Main: Enviando webContent 'loadLastLogin'`)
 
+  //console.log(lastLogin)
   return lastLogin
 })
 
@@ -338,8 +327,25 @@ ipcMain.on('startDownload', async (event, options) => {
   if (!options.hasOwnProperty('group')) {
     settings.unsetSync('group')
   }
+
+  const searchData = {
+    lastRecorderIP: options.lastRecorderIP,
+    client: options.client,
+    username: options.username,
+    startTime: options.startTime,
+    endTime: options.endTime,
+    Extension: options.hasOwnProperty('extension') ? options.extension.join(',') : null,
+    AgentGroup: options.hasOwnProperty('group') ? options.group : null,
+    searchMode: options.searchMode,
+    resultsToSkip: 0,
+    downloadDirectory: options.downloadPath
+  }
+
+  //console.log(searchData)
+  saveSearch(searchData)
   
   options = settings.getSync()
+  options.password = getLastLogin(options.username).lastPassword
 
   beginDownloadCycle(event, options)  
 

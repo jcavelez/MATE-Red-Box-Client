@@ -1,4 +1,4 @@
-import { loadLastSearch, openDir, openExportPreferences, openStatusDialog, stopDownloadProccess } from './ipcRendererEvents.js'
+import { loadLastSearch, loadCurrentLogin, openDir, openExportPreferences, openStatusDialog, stopDownloadProccess } from './ipcRendererEvents.js'
 import { validateDate } from '../../assets/lib/validateDate.js'
 
 
@@ -23,6 +23,7 @@ const downloadModal = document.getElementById("download-dialog");
 
 window.addEventListener('load', addEvents)
 window.addEventListener('load', loadLastSearch)
+window.addEventListener('load', loadCurrentLogin)
 
 function addEvents() {
     const clear =  (ev) => {
