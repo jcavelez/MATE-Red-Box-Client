@@ -1,11 +1,51 @@
 import { validateDate } from '../../assets/lib/validateDate.js'
 import { formatStartDate, formatEndDate } from '../../assets/lib/formatDate.js'
+import { enableChildren } from './frontend.js'
 
 let options = {}
 
 
-function loadPreferences() {
-    window.api.send('loadPreferences')
+async function loadLastSearch() {
+    const lastSearch = await window.api.invoke('loadLastSearch')
+    console.log(lastSearch)
+    
+    const replaceText = (selector, text) => {
+        const element = document.getElementById(selector)
+        if (element) element.innerText = text
+    }
+
+    replaceText('username', `[${lastSearch.username}]`)
+    replaceText('recorder', lastSearch.lastRecorderIP)
+
+    document.getElementById('download-section-input').value = lastSearch.downloadDirectory
+    document.getElementById('start-date').value = lastSearch.startTime.substring(6,8) + 
+                                                '/'+ 
+                                                lastSearch.startTime.substring(4,6) +
+                                                '/' +
+                                                lastSearch.startTime.substring(0,4) 
+    document.getElementById('start-hour').value = lastSearch.startTime.substring(8,10)
+                                                + ':' + 
+                                                lastSearch.startTime.substring(10,12)
+    document.getElementById('end-date').value = lastSearch.endTime.substring(6,8) +
+                                                '/' + 
+                                                lastSearch.endTime.substring(4,6) +
+                                                '/' +
+                                                lastSearch.endTime.substring(0,4)
+    document.getElementById('end-hour').value = lastSearch.endTime.substring(8,10)
+                                                + ':' + 
+                                                lastSearch.endTime.substring(10,12)
+
+    if(lastSearch.Extension) {
+        document.getElementById('switch-extension').toggled = true
+        enableChildren(document.getElementById('card-extension'))
+        document.getElementById('input-extension').value = lastSearch.Extension
+    }
+
+    if(lastSearch.AgentGroup) {
+        document.getElementById('switch-group').toggled = true
+        enableChildren(document.getElementById('card-group'))
+        document.getElementById('input-group').value = lastSearch.AgentGroup
+    }
 }
 
 function openDir() {
@@ -137,36 +177,6 @@ window.api.receive('recievePath', (data) => {
     document.getElementById('download-section-input').value = data
 })
 
-window.api.receive('getPreferences', (prefs) => {
-
-    const replaceText = (selector, text) => {
-        const element = document.getElementById(selector)
-        if (element) element.innerText = text
-    }
-
-    replaceText('username', `[${prefs.username}]`)
-    replaceText('recorder', prefs.lastRecorderIP)
-
-    document.getElementById('download-section-input').value = prefs.downloadDirectory
-    document.getElementById('start-date').value = prefs.startTime.substring(6,8) + 
-                                                '/'+ 
-                                                prefs.startTime.substring(4,6) +
-                                                '/' +
-                                                prefs.startTime.substring(0,4) 
-    document.getElementById('start-hour').value = prefs.startTime.substring(8,10)
-                                                + ':' + 
-                                                prefs.startTime.substring(10,12)
-    document.getElementById('end-date').value = prefs.endTime.substring(6,8) +
-                                                '/' + 
-                                                prefs.endTime.substring(4,6) +
-                                                '/' +
-                                                prefs.endTime.substring(0,4)
-    document.getElementById('end-hour').value = prefs.endTime.substring(8,10)
-                                                + ':' + 
-                                                prefs.endTime.substring(10,12)
-    ipcRenderer.send('modalStatus', true)
-})
-
 
 window.api.receive('recorderSearching', () => {
     console.log('Buscando')
@@ -273,9 +283,9 @@ window.api.receive('recorderNotLicensed', () => {
 window.api.receive('searchUpdate', (data) => {
     console.log(data)
     const m2 = document.getElementById("messages-small")
-    m2.innerHTML = `Total: ${data.total} - Descargados: ${data.successes}`
+    m2.innerHTML = `Descargas: ${data.successes} - Total: ${data.total} `
 })
 
 
-export { openDir, loadPreferences, requestStartDownload, stopDownloadProccess, openExportPreferences, openStatusDialog } 
+export { openDir, loadLastSearch, requestStartDownload, stopDownloadProccess, openExportPreferences, openStatusDialog } 
 

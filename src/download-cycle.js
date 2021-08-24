@@ -136,10 +136,11 @@ const beginDownloadCycle = async (event, options) => {
     username: options.username,
     startTime: options.startTime,
     endTime: options.endTime,
-    Extension: options.hasOwnProperty('extension') ? options.extension : null,
+    Extension: options.hasOwnProperty('extension') ? options.extension.join(',') : null,
     AgentGroup: options.hasOwnProperty('group') ? options.group : null,
     searchMode: options.searchMode,
-    resultsToSkip: 0
+    resultsToSkip: 0,
+    downloadDirectory: options.downloadPath
   }
 
   saveSearch(searchData)

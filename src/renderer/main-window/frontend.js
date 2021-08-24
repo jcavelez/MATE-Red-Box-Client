@@ -1,4 +1,4 @@
-import { loadPreferences, openDir, openExportPreferences, openStatusDialog, stopDownloadProccess } from './ipcRendererEvents.js'
+import { loadLastSearch, openDir, openExportPreferences, openStatusDialog, stopDownloadProccess } from './ipcRendererEvents.js'
 import { validateDate } from '../../assets/lib/validateDate.js'
 
 
@@ -22,7 +22,7 @@ const stopButton = document.getElementById('stop-btn')
 const downloadModal = document.getElementById("download-dialog");
 
 window.addEventListener('load', addEvents)
-window.addEventListener('load', loadPreferences)
+window.addEventListener('load', loadLastSearch)
 
 function addEvents() {
     const clear =  (ev) => {
@@ -106,3 +106,4 @@ function stopDownload() {
     //downloadBtn.addEventListener('click', openStatusDialog)
 }
 
+export { enableChildren }
