@@ -7,24 +7,26 @@ log.transports.file.level = 'info'
 log.transports.file.maxSize = 5242880
 log.transports.file.resolvePath = () => 'C:\\MATE\\Mate.log'
 
-function createNewFileName (callData, ext) {
+function createNewFileName (callData, downloadOptions) {
     try {
+        console.log(callData)
         let date = callData.StartDateTime.split(' ')[0].split('/')
         let hour = callData.StartDateTime.split(' ')[1].replaceAll(' ', '_').replaceAll(':', '-')
         hour = hour + '-' + callData.StartDateTime.split(' ')[2]
-        let newName = 
-            callData.Extension 
-            + '_' + callData.AgentGroup 
-            + '_' + callData.OtherParty 
-            + '_' + date[1] + '-' + date[0] + '-' + date[2] 
-            + '_' + hour 
-            + '_' + callData.ExternalCallID 
-            + '_' + callData.RBRCallGUID
+        let newName =  downloadOptions.callIDField === 'yes' ? callData.callID + '_' : ''
+        newName +=  downloadOptions.extensionField === 'yes' ? callData.Extension + '_' : ''
+        newName += downloadOptions.channelNameField === 'yes' ? callData.ChannelName + '_' : ''
+        newName += downloadOptions.startDateField === 'yes' ? date[0] + '-' + date[1] + '-' + date[2] + '_' + hour + '_' : ''
+        newName += downloadOptions.otherPartyField === 'yes' ? callData.OtherParty + '_' : ''
+        newName += downloadOptions.agentGroupField === 'yes' ? callData.AgentGroup + '_' : ''
+        newName += downloadOptions.externalCallIDField === 'yes' ? callData.ExternalCallID : ''
+        console.log(newName)
+
         const dir = path.dirname(callData.ruta)
         const subdir = subfolderName(callData)
         const newDir = path.join(dir, subdir)
         makeSubdir(newDir)
-        const dstFile = path.join(newDir, `${newName}.${ext}`)
+        const dstFile = path.join(newDir, `${newName}.wav`)
 
         return dstFile
 

@@ -110,15 +110,28 @@ function createSchema() {
 
     try {
         const info = db
-            .prepare(`CREATE TABLE Configuracion (
+            .prepare(`CREATE TABLE Sesiones (
                 username text PRIMARY KEY,
                 lastPassword text,
-                lastRecorderIP text
+                lastRecorderIP text,
+                outputFormat text,
+                report text,
+                overwrite text,
+                parallelDownloads int,
+                rememberLastSession text, 
+                callIDField text,
+                externalCallIDField text,
+                startDateField text,
+                endDateField text,
+                extensionField text, 
+                channelNameField text,
+                otherPartyField text,
+                agentGroupField text                
                 )`)
             .run()
 
           if (info) {
-            log.info(`SQLite3: Tabla Configuracion creada`)
+            log.info(`SQLite3: Tabla Sesiones creada`)
           }
     } catch (error) {
         log.error(`SQLite3: ${error}`)
@@ -129,7 +142,7 @@ function clearRecordsTable() {
     try {
         log.info(`SQLite3: Limpiando tabla de grabaciones.`)
         // Resetea la tabla cuando se inicia el programa o cuando se ehecuta una nueva búsqueda
-        db.prepare('DELETE FROM Grabaciones').run() // <----------------DELETE ON PRODUCTION??
+        db.prepare('DELETE FROM Grabaciones').run()
     } catch (error2) {
         log.error(`SQLite3: ${error2}`)
     }
@@ -376,7 +389,7 @@ function getTotalRows(){
 function saveSessionSettings(username, data) {
     try {
         let query = 
-            `UPDATE Configuracion
+            `UPDATE Sesiones
              SET `
 
         let columns = []
@@ -399,7 +412,7 @@ function saveSessionSettings(username, data) {
 
             const template = new Array(values.length).fill('?')
 
-            const insert = db.prepare(`INSERT INTO Configuracion (${columns}) VALUES (${template})`)
+            const insert = db.prepare(`INSERT INTO Sesiones (${columns}) VALUES (${template})`)
 
             insert.run(values)
         }
@@ -412,7 +425,7 @@ function saveSessionSettings(username, data) {
 
 function getLastLogin(username) {
     try {
-        let query = `SELECT username, lastPassword, lastRecorderIP FROM Configuracion
+        let query = `SELECT username, lastPassword, lastRecorderIP FROM Sesiones
                     WHERE username = '${username}'`
         
         const select = db.prepare(query)
@@ -426,7 +439,21 @@ function getLastLogin(username) {
     }
 }
 
+function getSessionSettings(username) {
+    try {
+        let query = `SELECT * FROM Sesiones
+                    WHERE username = '${username}'`
+        
+        const select = db.prepare(query)
+        const res = select.all()
+        log.info('SQLite3: Select Query Last Login succeeded')
 
+        return res[0]
+
+    } catch (error) {
+        log.error(`SQLite3: Select ${error}`)
+    }
+}
 
 function getLastSearch(username) {
     try {
@@ -468,5 +495,6 @@ module.exports = {
     getExternalCallID,
     saveSessionSettings,
     getLastLogin,
+    getSessionSettings
     }
 

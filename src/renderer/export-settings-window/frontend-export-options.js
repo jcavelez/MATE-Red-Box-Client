@@ -1,6 +1,6 @@
 const saveBtn = document.getElementById('save')
 const exitBtn = document.getElementById('exit')
-const formatMenu = document.getElementById('format-menu')
+const formatMenu = document.getElementById('format-menu').firstElementChild
 
 saveBtn.addEventListener('click', savePreferences)
 exitBtn.addEventListener('click', closeWindow)
@@ -11,10 +11,10 @@ allowedFormats.forEach((f) => {
     const menuElement = `<x-menuitem value="${f}">
     <x-label>${f.toUpperCase()}</x-label>
     </x-menuitem>`
-    formatMenu.innerHTML(menuElement)
+    formatMenu.innerHTML += menuElement
 })
-
-getExportPreferences()
+//CONTINUAR SELECCIONANDO SEGUN PREFERENCIA
+loadExportPreferences()
 
 
 function savePreferences() {
@@ -30,7 +30,8 @@ function closeWindow(ev) {
     window.close()
 }
 
-function getExportPreferences() {
-    const lastFormat = await window.api.invoke('getExportPreferences')
+function loadExportPreferences() {
+    const exportPreferences = window.api.invoke('loadExportPreferences')
+    console.log(exportPreferences)
 }
 

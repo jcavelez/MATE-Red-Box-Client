@@ -11,12 +11,12 @@ log.transports.file.resolvePath = () => 'C:\\MATE\\Mate.log'
 
 log.info(`Worker Download Audio ID ${threadId}: Creado`)
 
-//console.log(workerData.options)
+console.log(workerData.options)
 
 let downloadOptions = workerData.options
 const IP = downloadOptions.lastRecorderIP
 let username = downloadOptions.username
-let password = downloadOptions.password
+let password = downloadOptions.lastPassword
 const downloadPath = downloadOptions.downloadPath
 let currentToken = null 
 let loginError = null;
@@ -212,7 +212,7 @@ async function postDownloadTasks(callID, callData) {
     const StartDateTime = callData.StartDateTime
     
     if (callData.idEstado === 4) {
-        const dstFile = createNewFileName(callData, outputFormat)
+        const dstFile = createNewFileName(callData, downloadOptions)
         log.info(`PostDownloadTasks: CallID ${callID} - Nuevo nombre ${dstFile}`)
 
         if (dstFile === ' error') {
