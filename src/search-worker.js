@@ -54,10 +54,9 @@ const newSearch = async () => {
         options.status = 'complete'
         parentPort.postMessage({type: 'error', error: 'Busqueda sin resultados'})
         return
+     
       }
     }
-
-    if(searchStatus.hasOwnProperty('error') || )
     
     
     //se considera busqueda incompleta mientras placeNewSearch devuelva 

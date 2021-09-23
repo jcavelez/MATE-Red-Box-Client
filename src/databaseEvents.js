@@ -96,12 +96,42 @@ function createSchema() {
                 Extension text,
                 AgentGroup text,
                 client text, 
-                resultsToSkip int
+                resultsToSkip int,
+                downloadDirectory text
                 )`)
             .run()
 
           if (info) {
             log.info(`SQLite3: Tabla Grabaciones creada`)
+          }
+    } catch (error) {
+        log.error(`SQLite3: ${error}`)
+    }
+
+    try {
+        const info = db
+            .prepare(`CREATE TABLE Sesiones (
+                username text PRIMARY KEY,
+                lastPassword text,
+                lastRecorderIP text,
+                outputFormat text,
+                report text,
+                overwrite text,
+                parallelDownloads int,
+                rememberLastSession text, 
+                callIDField text,
+                externalCallIDField text,
+                startDateField text,
+                endDateField text,
+                extensionField text, 
+                channelNameField text,
+                otherPartyField text,
+                agentGroupField text                
+                )`)
+            .run()
+
+          if (info) {
+            log.info(`SQLite3: Tabla Sesiones creada`)
           }
     } catch (error) {
         log.error(`SQLite3: ${error}`)
@@ -112,7 +142,7 @@ function clearRecordsTable() {
     try {
         log.info(`SQLite3: Limpiando tabla de grabaciones.`)
         // Resetea la tabla cuando se inicia el programa o cuando se ehecuta una nueva búsqueda
-        db.prepare('DELETE FROM Grabaciones').run() // <----------------DELETE ON PRODUCTION??
+        db.prepare('DELETE FROM Grabaciones').run()
     } catch (error2) {
         log.error(`SQLite3: ${error2}`)
     }
@@ -168,10 +198,7 @@ function saveSearch(data) {
         template.push(`datetime('now', 'localtime')`)
         
         const insert = db.prepare(`INSERT INTO Busquedas (${columns}) VALUES (${template})`)
-        //const transaction = db.transaction(insert.run(values))
         insert.run(values)
-
-        //transaction(values)
 
         log.info('SQLite3: Insert Search succeeded')
     } catch (error) {
@@ -359,6 +386,95 @@ function getTotalRows(){
 }
 
 
+function saveSessionSettings(username, data) {
+    try {
+        let query = 
+            `UPDATE Sesiones
+             SET `
+
+        let columns = []
+
+        for (const key in data) {
+            columns.push(`${key} = '${data[key]}' `)
+        }
+
+        query += columns.join(', ') + `WHERE username = '${username}'`
+
+        const update = db.prepare(query)
+        let info = update.run()
+        
+        if (info.changes == 0) {
+            
+            columns = Object.keys(data)
+            columns.push('username')
+            let values = Object.values(data)
+            values.push(username)
+
+            const template = new Array(values.length).fill('?')
+
+            const insert = db.prepare(`INSERT INTO Sesiones (${columns}) VALUES (${template})`)
+
+            insert.run(values)
+        }
+
+
+    } catch (error) {
+        log.error(`SQLite3: Select ${error}`)
+    }
+}
+
+function getLastLogin(username) {
+    try {
+        let query = `SELECT username, lastPassword, lastRecorderIP FROM Sesiones
+                    WHERE username = '${username}'`
+        
+        const select = db.prepare(query)
+        const res = select.all()
+        log.info('SQLite3: Select Query Last Login succeeded')
+
+        return res[0]
+
+    } catch (error) {
+        log.error(`SQLite3: Select ${error}`)
+    }
+}
+
+function getSessionSettings(username) {
+    try {
+        let query = `SELECT * FROM Sesiones
+                    WHERE username = '${username}'`
+        
+        const select = db.prepare(query)
+        const res = select.all()
+        log.info('SQLite3: Select Query Last Login succeeded')
+
+        return res[0]
+
+    } catch (error) {
+        log.error(`SQLite3: Select ${error}`)
+    }
+}
+
+function getLastSearch(username) {
+    try {
+        let query = `SELECT startTime, endTime, Extension, AgentGroup, downloadDirectory FROM Busquedas
+                    WHERE username = '${username}'
+                    ORDER BY id DESC
+                    LIMIT 1`
+        
+        const select = db.prepare(query)
+        const res = select.all()
+
+        log.info('SQLite3: Select Query Last Search succeeded')
+
+        return res[0]
+
+    } catch (error) {
+        log.error(`SQLite3: Select ${error}`)
+    }
+}
+
+
 
 module.exports = {
     createDatabase,
@@ -367,6 +483,7 @@ module.exports = {
     updateSearch,
     saveIDs,
     saveSearch,
+    getLastSearch,
     getRecordsNoProcesed,
     getRecordsNoChecked,
     getRecordsReadyToDownload,
@@ -376,5 +493,8 @@ module.exports = {
     getTotalRows,
     updateRecords,
     getExternalCallID,
+    saveSessionSettings,
+    getLastLogin,
+    getSessionSettings
     }
 

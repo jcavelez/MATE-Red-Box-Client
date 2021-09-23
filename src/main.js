@@ -4,7 +4,7 @@ const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog } = require
 const { Worker } = require('worker_threads')
 const settings = require('electron-settings')
 const path = require('path')
-const { createDatabase, createSchema } = require('./databaseEvents')
+const { createDatabase, createSchema, saveSessionSettings, getLastLogin, getLastSearch, saveSearch, getSessionSettings } = require('./databaseEvents')
 const devtools = require('./devtools')
 const log = require('electron-log')
 const { runLoginEvent, beginDownloadCycle, forceStopProcess, logout } = require('./download-cycle')
@@ -48,6 +48,7 @@ if (!gotTheLock) {
     createSchema()
     log.info('Main: Cargando ventana de Login')
     createLoginWindow()
+    createDefaultSettings()
     
   })
 }
@@ -79,16 +80,7 @@ function createLoginWindow () {
 
   loginWindow.loadURL(path.join(__dirname, './renderer/login.html'))
 
-  loginWindow.once('ready-to-show', () => {
-    log.info(`Main. Login Window event ready-to-show`)
-    const lastLogin = {
-      recorder: settings.hasSync('lastRecorderIP') ? settings.getSync('lastRecorderIP') : '',
-      username: settings.hasSync('username') ? settings.getSync('username') : '',
-      password: settings.hasSync('password') ? settings.getSync('password') : ''
-    }
-    
-    log.info(`Main: Enviando webContent 'loadLastLogin'`)
-    loginWindow.webContents.send('loadLastLogin', lastLogin)
+  loginWindow.once('ready-to-show', async () => {
     loginWindow.show()
   })
 }
@@ -142,11 +134,6 @@ function createWindow () {
   })
 }
 
-function saveLoginData(loginData){
-  settings.setSync('lastRecorderIP', loginData.recorder)
-  settings.setSync('username', loginData.username)
-  settings.setSync('password', loginData.password)
-}
 
 async function warningClose(){
   log.info(`Main: Cerrando aplicacion`)
@@ -173,6 +160,35 @@ async function warningClose(){
   }
 }
 
+function createDefaultSettings() {
+  const checkNewSettings = (key, value) => {
+    if (!settings.hasSync(key)) {
+        settings.setSync(key,value)
+        log.info(key + ': ' + value)
+      }
+  }
+
+    log.info('Main: Creando configuracion por defecto. Archivo: ' + settings.file())
+
+    //checkNewSettings('startTime', '20210531000000')
+    //checkNewSettings('endTime', '20210531235959')
+    //checkNewSettings('downloadDirectory', 'C:\\')
+    checkNewSettings('client', '')
+    checkNewSettings('searchMode', 'EarliestFirst')
+    checkNewSettings('outputFormat', 'mp3')
+    checkNewSettings('report', 'yes')
+    checkNewSettings('overwrite', 'yes')
+    checkNewSettings('parallelDownloads', 1)
+    checkNewSettings('logLevel', 'INFO')
+    checkNewSettings('callIDField', 'yes')
+    checkNewSettings('externalCallIDField', 'no')
+    checkNewSettings('startDateField', 'no')
+    checkNewSettings('extensionField', 'no')
+    checkNewSettings('channelNameField', 'no')
+    checkNewSettings('otherPartyField', 'no')
+    checkNewSettings('agentGroupField', 'no')
+}
+
 
 
 //************************************************* */
@@ -196,9 +212,16 @@ app.on('will-quit', async () => {
 
 // ............. Login Event ....................................
 ipcMain.on('login', async (event, loginData) => {
-  if(loginData.saveData) {
-    saveLoginData(loginData)
-  }
+  settings.setSync('lastRecorderIP', loginData.recorder)
+  settings.setSync('username', loginData.username)
+
+  loginData.saveData ? settings.setSync('rememberLastSession', 'yes') : settings.setSync('rememberLastSession', 'no')
+  
+  saveSessionSettings(loginData.username, {
+    lastRecorderIP: loginData.recorder,
+    lastPassword: loginData.password
+  })
+
   await runLoginEvent(event, loginData)
 })
 
@@ -231,34 +254,35 @@ ipcMain.on('openDir', (event) => {
   }).catch(err => log.error('Main: Handle Error ',err))
 })
 
-// ...............Load Preferences Event .................
-ipcMain.on('loadPreferences', (event) => {
-  log.info('Main: DOM content loaded')
-    
-  const checkNewSettings = (key, value) => {
-    if (!settings.hasSync(key)) {
-        settings.setSync(key,value)
-        log.info(key + ': ' + value)
-      }
-  }
+// ...............Load last Search Event .......................
 
-  log.info('Main: Cargando opciones de configuracion de usuario. Archivo: ' + settings.file())
-
-  checkNewSettings('client', 'EMTELCO')
-  checkNewSettings('searchMode', 'EarliestFirst')
-  checkNewSettings('startTime', '20210531000000')
-  checkNewSettings('endTime', '20210531235959')
-  checkNewSettings('outputFormat', 'mp3')
-  checkNewSettings('report', 'yes')
-  checkNewSettings('overwrite', 'yes')
-  checkNewSettings('parallelDownloads', 1)
-  checkNewSettings('downloadDirectory', 'C:\\')
-  checkNewSettings('logLevel', 'INFO')
+ipcMain.handle('loadLastSearch', (event) => {
+  log.info('Main: loadLastSearch event recieved')
   
-  event.sender.send('getPreferences', settings.getSync())
+  let lastSearch = { ...getLastSearch(settings.getSync('username')) }
+  
+  console.log(lastSearch)
+  
+ return lastSearch
 })
 
-//............. Open Export Options Window ...............
+// ...............Load Last Login Event ........................
+
+ipcMain.handle('loadLastLogin', (event) => {
+  let lastLogin = {}
+  const remember = settings.hasSync('rememberLastSession') ? settings.getSync('rememberLastSession') : 'no'
+
+  if (remember == 'yes' && settings.hasSync('username')) {
+    lastLogin = {  ...getLastLogin(settings.getSync('username'))}
+  }
+
+  log.info(`Main: Enviando webContent 'loadLastLogin'`)
+
+  //console.log(lastLogin)
+  return lastLogin
+})
+
+//............. Open Export Options Window .....................
 ipcMain.on('openExportOptions', (event) => {
   const exportOptionsWindow = new BrowserWindow({
     width: 435,
@@ -282,11 +306,19 @@ ipcMain.on('openExportOptions', (event) => {
   log.info('Main: Ventana Opciones de Exportacion creada')
   
   exportOptionsWindow.once('ready-to-show', () => {
-    ipcMain.send()
     exportOptionsWindow.show()
     exportOptionsWindow.focus()
   })
 })
+
+//............. Load Export Options Event .....................
+ipcMain.handle('loadExportPreferences', () => {
+  let exportPreferences = getSessionSettings(settings.getSync('username'))
+
+  return exportPreferences
+})
+
+//............. Start Download Event ........................
 
 
 ipcMain.on('startDownload', async (event, options) => {
@@ -299,7 +331,6 @@ ipcMain.on('startDownload', async (event, options) => {
     settings.setSync(property, options[property])
     log.info(`Main: Guardando en settings {'${property}: ${options[property]}}`)
   }
-  log.info(options)
 
   if (!options.hasOwnProperty('extension')) {
     settings.unsetSync('extension')
@@ -308,23 +339,65 @@ ipcMain.on('startDownload', async (event, options) => {
   if (!options.hasOwnProperty('group')) {
     settings.unsetSync('group')
   }
-  
+
+  const lastLogin = getLastLogin(settings.getSync('username'))
+  //console.log(lastLogin)
+
+  const searchData = {
+    lastRecorderIP: lastLogin.lastRecorderIP,
+    client: settings.hasSync('client') ? settings.getSync('client') : null,
+    username: lastLogin.username,
+    startTime: options.startTime,
+    endTime: options.endTime,
+    Extension: options.hasOwnProperty('extension') ? options.extension.join(',') : null,
+    AgentGroup: options.hasOwnProperty('group') ? options.group : null,
+    //searchMode: options.searchMode,
+    //resultsToSkip: 0,
+    downloadDirectory: options.downloadPath
+  }
+
+  //console.log(searchData)
+  saveSearch(searchData)
+
   options = settings.getSync()
 
+  const sessionSettings = {
+                          outputFormat: options.outputFormat,
+                          report: options.report,
+                          overwrite: options.overwrite,
+                          parallelDownloads: options.parallelDownload,
+                          rememberLastSession: options.rememberLastSession ,
+                          callIDField: options.callIDField,
+                          externalCallIDField: options.externalCallIDField,
+                          startDateField: options.startDateField,
+                          endDateField: options.endDateField,
+                          extensionField: options.extensionField,
+                          channelNameField: options.channelNameField,
+                          otherPartyField: options.otherPartyField,
+                          agentGroupField: options.agentGroupField
+                          }
+
+  saveSessionSettings(options.username, sessionSettings)
+  
+  const savedSession = getLastLogin(options.username)
+  
+  for (const key in savedSession) {
+    options[key] = savedSession[key] === null ?  settings.getSync(key) : savedSession[key]
+  }
+
+  
+  //console.log(options)
   beginDownloadCycle(event, options)  
 
 })
 
+//............. Stop Download Event ........................
 
 ipcMain.on('stop', () => {
   log.info(`Main: Message stop received`)
   forceStopProcess()
 })
 
-ipcMain.on('modalStatus', (event, data) => {
-  //log.info(`Main: Message modalStatus received - ${data}`)
-  modalOpened = data
-})
 
 ipcMain.on('updatePreferences', (event, prefs) => {
   log.info(`Main: Message updatePreferences received`)
@@ -333,4 +406,10 @@ ipcMain.on('updatePreferences', (event, prefs) => {
     settings.setSync(key, prefs[key])
   }
   log.info(`Main: Preferencias actualizadas correctamente.`) 
+})
+
+
+ipcMain.on('modalStatus', (event, data) => {
+  //log.info(`Main: Message modalStatus received - ${data}`)
+  modalOpened = data
 })
