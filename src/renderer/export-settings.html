@@ -24,23 +24,17 @@
                 <x-label>Formato de descarga:</x-label>
                 <x-select id="format-menu">
                     <x-menu >
-                        <!-- <x-menuitem value="wav">
-                            <x-label>WAV</x-label>
-                        </x-menuitem>
-                        <x-menuitem value="mp3">
-                            <x-label>MP3</x-label>
-                        </x-menuitem> -->
                     </x-menu>
                 </x-select>
             </x-box>
             <x-box class="options-item">
                 <x-label>Sobreescribir archivos:</x-label>
-                <x-select disabled>
+                <x-select id="overwrite-menu">
                     <x-menu>
-                        <x-menuitem value="si" toggled>
+                        <x-menuitem value="yes" id="overwrite-menu--yes">
                             <x-label>Si</x-label>
                         </x-menuitem>
-                        <x-menuitem value="no">
+                        <x-menuitem value="no" id="overwrite-menu--no">
                             <x-label>No</x-label>
                         </x-menuitem>
                     </x-menu>
@@ -48,12 +42,12 @@
             </x-box>
             <x-box class="options-item">
                 <x-label>Generar informe:</x-label>
-                <x-select disabled>
+                <x-select id="report-menu">
                     <x-menu>
-                        <x-menuitem value="si" toggled>
+                        <x-menuitem value="yes" id="report-menu--yes">
                             <x-label>Si</x-label>
                         </x-menuitem>
-                        <x-menuitem value="no">
+                        <x-menuitem value="no" id="report-menu--no">
                             <x-label>No</x-label>
                         </x-menuitem>
                     </x-menu>
@@ -68,48 +62,46 @@
             </x-box>
             <x-box class="filename-column">
                 <x-box class="filename-field">
-                    <x-checkbox class="filename-check"></x-checkbox>
+                    <x-checkbox class="filename-check" id="filename-callId"></x-checkbox>
                     <x-label class="filename-fieldname">ID Llamada</x-label>
                 </x-box>
                 <x-box class="filename-field">
-                    <x-checkbox class="filename-check" toggled></x-checkbox>
+                    <x-checkbox class="filename-check" id="filename-externalCallId"></x-checkbox>
                     <x-label class="filename-fieldname">External Call ID</x-label>
                 </x-box>
                 <x-box class="filename-field">
-                    <x-checkbox class="filename-check" toggled></x-checkbox>
+                    <x-checkbox class="filename-check" id="filename-startDate"></x-checkbox>
                     <x-label class="filename-fieldname">Fecha Inicio</x-label>
                 </x-box>
                 <x-box class="filename-field">
-                    <x-checkbox class="filename-check"></x-checkbox>
+                    <x-checkbox class="filename-check" id="filename-endDate"></x-checkbox>
                     <x-label class="filename-fieldname">Fecha Fin</x-label>
                 </x-box>
             </x-box>
             <x-box class="filename-column">
                 <x-box class="filename-field">
-                    <x-checkbox class="filename-check" toggled></x-checkbox>
+                    <x-checkbox class="filename-check" id="filename-extension"></x-checkbox>
                     <x-label class="filename-fieldname">Extension</x-label>
                 </x-box>
                 <x-box class="filename-field">
-                    <x-checkbox class="filename-check" toggled></x-checkbox>
+                    <x-checkbox class="filename-check" id="filename-channelName"></x-checkbox>
                     <x-label class="filename-fieldname">Nombre de Canal</x-label>
                 </x-box>
                 <x-box class="filename-field">
-                    <x-checkbox class="filename-check" toggled></x-checkbox>
+                    <x-checkbox class="filename-check" id="filename-otherParty"></x-checkbox>
                     <x-label class="filename-fieldname">Otro Usuario</x-label>
                 </x-box>
                 <x-box class="filename-field">
-                    <x-checkbox class="filename-check" toggled></x-checkbox>
+                    <x-checkbox class="filename-check" id="filename-agentGroup"></x-checkbox>
                     <x-label class="filename-fieldname">Grupo de Agente</x-label>
                 </x-box>
             </x-box>
         </x-box>
         
-
         <x-box class="buttons">
             <x-button id="save">Guardar</x-button>
             <x-button id="exit">Cancelar</x-button>
         </x-box>
-
 
     </main>
     <script src="./export-settings-window/frontend-export-options.js"></script>
