@@ -1,6 +1,6 @@
 const Database = require('better-sqlite3')
 const log = require('electron-log')
-log.transports.file.level = 'info'
+log.transports.file.level = 'error'
 log.transports.file.maxSize = 5242880
 log.transports.file.resolvePath = () => 'C:\\MATE\\Mate.log'
 
@@ -118,7 +118,7 @@ function createSchema() {
                 report text,
                 overwrite text,
                 parallelDownloads int,
-                rememberLastSession text, 
+                rememberLastSession text,
                 callIDField text,
                 externalCallIDField text,
                 startDateField text,
@@ -126,7 +126,8 @@ function createSchema() {
                 extensionField text, 
                 channelNameField text,
                 otherPartyField text,
-                agentGroupField text                
+                agentGroupField text,
+                client text                
                 )`)
             .run()
 
@@ -386,7 +387,7 @@ function getTotalRows(){
 }
 
 
-function saveSessionSettings(username, data) {
+function saveSessionSettings(username, recorder, data) {
     try {
         let query = 
             `UPDATE Sesiones
@@ -398,7 +399,7 @@ function saveSessionSettings(username, data) {
             columns.push(`${key} = '${data[key]}' `)
         }
 
-        query += columns.join(', ') + `WHERE username = '${username}'`
+        query += columns.join(', ') + `WHERE username = '${username}' AND lastRecorderIP = '${recorder}'`
 
         const update = db.prepare(query)
         let info = update.run()
@@ -407,8 +408,10 @@ function saveSessionSettings(username, data) {
             
             columns = Object.keys(data)
             columns.push('username')
+            columns.push('lastRecorderIP')
             let values = Object.values(data)
             values.push(username)
+            values.push(recorder)
 
             const template = new Array(values.length).fill('?')
 
@@ -417,16 +420,18 @@ function saveSessionSettings(username, data) {
             insert.run(values)
         }
 
+        
 
     } catch (error) {
-        log.error(`SQLite3: Select ${error}`)
+        log.error(`SQLite3: INSERT or UPDATE ${error}`)
     }
 }
 
-function getLastLogin(username) {
+function getLastLogin(username, recorder) {
     try {
         let query = `SELECT username, lastPassword, lastRecorderIP FROM Sesiones
-                    WHERE username = '${username}'`
+                    WHERE username = '${username}'
+                    AND lastRecorderIP = '${recorder}'`
         
         const select = db.prepare(query)
         const res = select.all()

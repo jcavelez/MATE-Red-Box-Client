@@ -2,9 +2,8 @@
 
 const { parentPort, workerData, threadId } = require('worker_threads')
 const sleep = require('./sleep.js')
-
 const log = require('electron-log')
-log.transports.file.level = 'info'
+log.transports.file.level = 'error'
 log.transports.file.maxSize = 5242880
 log.transports.file.resolvePath = () => 'C:\\MATE\\Mate.log'
 

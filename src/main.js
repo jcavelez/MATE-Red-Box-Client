@@ -1,6 +1,6 @@
 'use strict'
 
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, session } = require('electron')
 const { Worker } = require('worker_threads')
 const settings = require('electron-settings')
 const path = require('path')
@@ -13,10 +13,9 @@ const { setupErrors } = require('./handler-errors')
 
 console.log = log.log
 settings.configure({prettify: true})
-log.transports.file.level = 'info'
+log.transports.file.level =  settings.hasSync('logLevel') ? settings.getSync('logLevel') : 'error'
 log.transports.file.maxSize = 5242880
 log.transports.file.resolvePath = () => 'C:\\MATE\\Mate.log'
-//TODO: log level in setting file.
 let loginWindow = null
 let win = null
 let appTray = null
@@ -55,7 +54,7 @@ if (!gotTheLock) {
 
 if (process.env.NODE_ENV === 'development') {
   devtools.run_dev_tools()
-  log.transports.file.level = 'info'
+  //log.transports.file.level = 'info'
 }
 
 //***********Funciones**************************/
@@ -76,7 +75,7 @@ function createLoginWindow () {
     }
   })
 
-  setupErrors(loginWindow)
+  //setupErrors(loginWindow)
 
   loginWindow.loadURL(path.join(__dirname, './renderer/login.html'))
 
@@ -125,7 +124,6 @@ function createWindow () {
 
   win.on('close', (event) => {
     event.preventDefault()
-    //log.info(modalOpened) //<-------------------delete
     if (modalOpened) {
       win.hide()
     } else {
@@ -160,6 +158,8 @@ async function warningClose(){
   }
 }
 
+//COMIENZO EN LOGIN PROCESO PARA GUARDAR DATA EN BD
+//ESTA FUNCION PUEDE QUEDAR OBSOLETA. REVISAR SI SE PUEDE BORRAR
 function createDefaultSettings() {
   const checkNewSettings = (key, value) => {
     if (!settings.hasSync(key)) {
@@ -170,16 +170,13 @@ function createDefaultSettings() {
 
     log.info('Main: Creando configuracion por defecto. Archivo: ' + settings.file())
 
-    //checkNewSettings('startTime', '20210531000000')
-    //checkNewSettings('endTime', '20210531235959')
-    //checkNewSettings('downloadDirectory', 'C:\\')
     checkNewSettings('client', '')
     checkNewSettings('searchMode', 'EarliestFirst')
     checkNewSettings('outputFormat', 'mp3')
     checkNewSettings('report', 'yes')
     checkNewSettings('overwrite', 'yes')
     checkNewSettings('parallelDownloads', 1)
-    checkNewSettings('logLevel', 'INFO')
+    checkNewSettings('logLevel', 'error')
     checkNewSettings('callIDField', 'yes')
     checkNewSettings('externalCallIDField', 'no')
     checkNewSettings('startDateField', 'no')
@@ -212,15 +209,38 @@ app.on('will-quit', async () => {
 
 // ............. Login Event ....................................
 ipcMain.on('login', async (event, loginData) => {
-  settings.setSync('lastRecorderIP', loginData.recorder)
-  settings.setSync('username', loginData.username)
 
-  loginData.saveData ? settings.setSync('rememberLastSession', 'yes') : settings.setSync('rememberLastSession', 'no')
-  
-  saveSessionSettings(loginData.username, {
-    lastRecorderIP: loginData.recorder,
-    lastPassword: loginData.password
-  })
+  const isFirstLogin = () => {
+    return (getLastLogin(loginData.username, loginData.recorder) == null)
+  }
+
+  let sessionInfo = {
+    lastPassword: loginData.password,
+    rememberLastSession: loginData.saveData ? 'yes' : 'no'
+  }
+
+  //Si es el primer login, se crean las opciones por defecto
+  if (isFirstLogin()) {
+    sessionInfo.outPutFormat = 'mp3'
+    sessionInfo.report = 'yes'
+    sessionInfo.overwrite = 'yes'
+    sessionInfo.parallelDownloads = 1
+    sessionInfo.callIDField = 'yes'
+    sessionInfo.externalCallIDField = 'no'
+    sessionInfo.startDateField = 'no'
+    sessionInfo.endDateField = 'no'
+    sessionInfo.extensionField = 'no'
+    sessionInfo.channelNameField = 'no'
+    sessionInfo.otherPartyField = 'no'
+    sessionInfo.agentGroupField = 'no'
+    sessionInfo.client = ''
+  }
+
+  saveSessionSettings(loginData.username, loginData.recorder, sessionInfo)
+
+  //se guarda la sesion actual en archivo de settings
+  settings.setSync('username', loginData.username)
+  settings.setSync('lastRecorderIP', loginData.recorder)
 
   await runLoginEvent(event, loginData)
 })
@@ -266,27 +286,69 @@ ipcMain.handle('loadLastSearch', (event) => {
  return lastSearch
 })
 
+
 // ...............Load Last Login Event ........................
 
 ipcMain.handle('loadLastLogin', (event) => {
-  let lastLogin = {}
-  const remember = settings.hasSync('rememberLastSession') ? settings.getSync('rememberLastSession') : 'no'
+  if (settings.hasSync('username') && settings.hasSync('lastRecorderIP')) {
+    return getLastLogin(settings.getSync('username'), settings.getSync('lastRecorderIP'))
+  } 
+  else return {}
 
-  if (remember == 'yes' && settings.hasSync('username')) {
-    lastLogin = {  ...getLastLogin(settings.getSync('username'))}
-  }
+  // let lastLogin = {}
+  // const remember = settings.hasSync('rememberLastSession') ? settings.getSync('rememberLastSession') : 'no'
 
-  log.info(`Main: Enviando webContent 'loadLastLogin'`)
+  // if (remember == 'yes' && settings.hasSync('username')) {
+  //   lastLogin = {  ...getLastLogin(settings.getSync('username'), settings.getSync('lastRecorderIP'))}
+  // }
 
-  //console.log(lastLogin)
-  return lastLogin
+  // log.info(`Main: Enviando webContent 'loadLastLogin'`)
+  
+  // return lastLogin
 })
 
+
 //............. Open Export Options Window .....................
+
+ipcMain.on('openUserOptions', (event) => {
+  const userOptionsWindow = new BrowserWindow({
+    width: 430,
+    height: 300,
+    resizable: false,
+    title: 'Opciones de Usuario',
+    frame: false,
+    parent: win,
+    hasShadow: true,
+    darkTheme: true,
+    modal: true,
+    show: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js')
+    }
+  })
+
+  userOptionsWindow.loadURL(`${path.join(__dirname, './renderer/user-settings.html')}`)
+
+  log.info('Main: Ventana Opciones de Usuario creada')
+
+  userOptionsWindow.once('ready-to-show', () => {
+    userOptionsWindow.show()
+    userOptionsWindow.focus()
+  })
+
+  userOptionsWindow.on('closed', () => {
+    event.sender.send('userOptionsWindowClosed')
+  })
+
+})
+
+
+//............. Open Export Options Window .....................
+
 ipcMain.on('openExportOptions', (event) => {
   const exportOptionsWindow = new BrowserWindow({
-    width: 435,
-    height: 500,
+    width: 430,
+    height: 535,
     resizable: false,
     title: 'Preferencias',
     //center: true,
@@ -309,11 +371,16 @@ ipcMain.on('openExportOptions', (event) => {
     exportOptionsWindow.show()
     exportOptionsWindow.focus()
   })
+
+  exportOptionsWindow.on('closed', () => {
+    event.sender.send('exportsWindowClosed')
+  })
 })
 
 //............. Load Export Options Event .....................
 ipcMain.handle('loadExportPreferences', () => {
   let exportPreferences = getSessionSettings(settings.getSync('username'))
+  //console.log(exportPreferences)
 
   return exportPreferences
 })
@@ -340,8 +407,8 @@ ipcMain.on('startDownload', async (event, options) => {
     settings.unsetSync('group')
   }
 
-  const lastLogin = getLastLogin(settings.getSync('username'))
-  //console.log(lastLogin)
+  const lastLogin = getLastLogin(settings.getSync('username'), settings.getSync('lastRecorderIP'))
+  console.log(lastLogin)
 
   const searchData = {
     lastRecorderIP: lastLogin.lastRecorderIP,
@@ -356,16 +423,17 @@ ipcMain.on('startDownload', async (event, options) => {
     downloadDirectory: options.downloadPath
   }
 
-  //console.log(searchData)
+  // se guarda también en BD
   saveSearch(searchData)
 
   options = settings.getSync()
 
+  //se recolecta todo lo que llega desde el frontend
   const sessionSettings = {
                           outputFormat: options.outputFormat,
                           report: options.report,
                           overwrite: options.overwrite,
-                          parallelDownloads: options.parallelDownload,
+                          parallelDownloads: options.parallelDownloads,
                           rememberLastSession: options.rememberLastSession ,
                           callIDField: options.callIDField,
                           externalCallIDField: options.externalCallIDField,
@@ -377,19 +445,22 @@ ipcMain.on('startDownload', async (event, options) => {
                           agentGroupField: options.agentGroupField
                           }
 
-  saveSessionSettings(options.username, sessionSettings)
+  //se guarda info en BD
+  saveSessionSettings(options.username, options.lastRecorderIP, sessionSettings)
   
-  const savedSession = getLastLogin(options.username)
-  
-  for (const key in savedSession) {
-    options[key] = savedSession[key] === null ?  settings.getSync(key) : savedSession[key]
-  }
+  const savedSession = getLastLogin(options.username,  options.lastRecorderIP)
 
+  options = Object.assign(options, savedSession)
   
-  //console.log(options)
+  // for (const key in savedSession) {
+  //   options[key] = savedSession[key] === null ?  settings.getSync(key) : savedSession[key]
+  // }
+
+
   beginDownloadCycle(event, options)  
 
 })
+
 
 //............. Stop Download Event ........................
 
@@ -399,6 +470,8 @@ ipcMain.on('stop', () => {
 })
 
 
+//................. Update Export Preferences Event .......................
+
 ipcMain.on('updatePreferences', (event, prefs) => {
   log.info(`Main: Message updatePreferences received`)
   for (const key in prefs) {
@@ -406,7 +479,7 @@ ipcMain.on('updatePreferences', (event, prefs) => {
     settings.setSync(key, prefs[key])
   }
 
-  saveSessionSettings(settings.getSync('username'), prefs)
+  saveSessionSettings(settings.getSync('username'), settings.getSync('lastRecorderIP'), prefs)
   log.info(`Main: Preferencias actualizadas correctamente.`) 
 })
 
@@ -414,4 +487,17 @@ ipcMain.on('updatePreferences', (event, prefs) => {
 ipcMain.on('modalStatus', (event, data) => {
   //log.info(`Main: Message modalStatus received - ${data}`)
   modalOpened = data
+})
+
+
+// ........................ Log Level Events ...................
+
+ipcMain.handle('loadLogLevel', () => {
+  return log.transports.file.level
+})
+
+ipcMain.on('setDebuggingLevel', (event, data) => {
+  log.transports.file.level = data.level.toLowerCase()
+  settings.set('logLevel', data.level.toLowerCase())
+  log.warn(`Main: Nuevo nivel de debugging "${data.level}""`)
 })

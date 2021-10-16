@@ -18,11 +18,18 @@ loginBtn.addEventListener('click', () => {
 
 loginBtn.addEventListener('click', sendForm)
 
+passwordInput.addEventListener('keyup', (event) => {
+    if (event.key === 'Enter') {
+        loginBtn.click()
+      }
+})
+
+
 
 async function loadLastLogin() {
     
     const lastLogin = await window.api.invoke('loadLastLogin')
-    console.log(lastLogin)
+    
 
     if (lastLogin.hasOwnProperty('lastRecorderIP')) {
         recorderInput.value =lastLogin.lastRecorderIP 

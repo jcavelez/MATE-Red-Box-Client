@@ -165,17 +165,23 @@ function requestStartDownload(options) {
     window.api.send('modalStatus', true)
 }
 
+function openUserOptions() {
+    window.api.send('openUserOptions')
+    const dialog = document.getElementById('menu-dialog')
+    dialog.close()
+    on() //overlay
+}
+
 function openExportPreferences() {
     window.api.send('openExportOptions')
-    //closing dialog
     const dialog = document.getElementById('menu-dialog')
-    dialog.removeAttribute('open')
+    dialog.close()
+    on() //overlay
 }
 
 function stopDownloadProccess() {
     window.api.send('stop')
 }
-
 
 function notify (message) {
     const notification = document.getElementById("notification");
@@ -300,6 +306,9 @@ window.api.receive('searchUpdate', (data) => {
     m2.innerHTML = `Descargas: ${data.successes} - Total: ${data.total} `
 })
 
+window.api.receive('userOptionsWindowClosed', off)
+window.api.receive('exportsWindowClosed', off)
 
-export { openDir, loadLastSearch, loadCurrentLogin, requestStartDownload, stopDownloadProccess, openExportPreferences, openStatusDialog } 
+
+export { openDir, loadLastSearch, loadCurrentLogin, requestStartDownload, stopDownloadProccess, openUserOptions, openExportPreferences, openStatusDialog } 
 

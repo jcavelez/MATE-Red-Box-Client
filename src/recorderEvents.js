@@ -5,7 +5,8 @@ const fs = require('fs')
 const path = require('path')
 
 const log = require('electron-log')
-log.transports.file.level = 'info'
+//const settings = require('electron-settings')
+log.transports.file.level = 'error'
 log.transports.file.maxSize = 5242880
 log.transports.file.resolvePath = () => 'C:\\MATE\\Mate.log'
 

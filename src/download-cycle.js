@@ -19,9 +19,7 @@ const { getRecordsNoProcesed,
 const { createErrorLog, saveDownloadError } = require('./download-error-logs')
 const { Worker } = require('worker_threads')
 const ipcTransportFactory = require('electron-log/src/transports/ipc')
-
-
-log.transports.file.level = 'info'
+log.transports.file.level ='error'
 log.transports.file.maxSize = 5242880
 log.transports.file.resolvePath = () => 'C:\\MATE\\Mate.log'
 

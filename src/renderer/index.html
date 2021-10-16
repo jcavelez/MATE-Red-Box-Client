@@ -54,11 +54,11 @@
             <x-icon class="menu-icon" name="menu" iconset="../../node_modules/xel/iconsets/material-outlined.svg" ></x-icon>
             <dialog id="menu-dialog">
                 <x-buttons vertical tracking="-1" class="menu">
-                    <x-button class="menu-item" skin="nav" id="query-options-btn" >
+                    <x-button class="menu-item" skin="nav" id="user-options-btn">
                         <x-icon name="person"></x-icon>
                         <x-label>Opciones de usuario</x-label>
                     </x-button>
-                    <x-button class="menu-item" skin="nav" id="search-options-btn">
+                    <x-button class="menu-item" skin="nav" id="search-options-btn" disabled>
                         <x-icon name="search"></x-icon>
                         <x-label>Opciones de busqueda</x-label>
                     </x-button>
@@ -162,6 +162,8 @@
             </x-button>
         </div>
 
+        <div id="overlay" onclick="off()"></div>
+
     </main>
 
     <footer>
@@ -171,6 +173,16 @@
     <x-notification id="notification"></x-notification>
 
     <script src="./main-window/frontend.js" type="module"></script>
+
+    <script>
+        function on() {
+          document.getElementById("overlay").style.display = "block";
+        }
+        
+        function off() {
+          document.getElementById("overlay").style.display = "none";
+        }
+    </script>
 
 </body>
 </html>

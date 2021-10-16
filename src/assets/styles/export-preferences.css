@@ -14,6 +14,11 @@
 * {
     color: var(--black-color);
     font-weight: var(--weight);
+    background-color: #ffffff;
+}
+
+body {
+    background: #ffffff !important;
 }
 
 header {
@@ -23,6 +28,7 @@ header {
     flex-direction: row;
     justify-content: space-between;
 }
+
 header x-label {
     padding: 32px 24px;
 
@@ -90,4 +96,12 @@ header x-label {
 
 .buttons x-button{
     margin-left: 15px;
+}
+
+#warnings {
+    width: 90%;
+    color: #FF4949;
+    font-size: 10px;
+    text-align: center;
+    margin-top: 3px;
 }

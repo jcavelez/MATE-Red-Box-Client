@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -9,7 +9,7 @@
     <meta name="xel-size" content="small">
     <meta name="xel-iconset" content="../../node_modules/xel/iconsets/material-outlined.svg">
     <link href="../../node_modules/xel-fonts/fonts.css" rel="stylesheet"></link>
-    <link rel="stylesheet" href="../assets/styles/preferences.css">
+    <link rel="stylesheet" href="../assets/styles/export-preferences.css">
     <script src="../../node_modules/xel/xel.js" type="module"></script>
     <title>Opciones de Exportacion</title>
 </head>
@@ -50,6 +50,44 @@
                         <x-menuitem value="no" id="report-menu--no">
                             <x-label>No</x-label>
                         </x-menuitem>
+                    </x-menu>
+                </x-select>
+            </x-box>
+            <x-box class="options-item">
+                <x-label>Descargas simultaneas:</x-label>
+                <x-select id="parallelDownloads-menu">
+                    <x-menu>
+                        <x-menuitem value="1" id="parallelDownloads-menu--1">
+                            <x-label>1</x-label>
+                        </x-menuitem>
+                        <x-menuitem value="2" id="parallelDownloads-menu--2">
+                            <x-label>2</x-label>
+                        </x-menuitem>
+                        <x-menuitem value="3" id="parallelDownloads-menu--3">
+                            <x-label>3</x-label>
+                        </x-menuitem>
+                        <x-menuitem value="4" id="parallelDownloads-menu--4">
+                            <x-label>4</x-label>
+                        </x-menuitem>
+                        <x-menuitem value="5" id="parallelDownloads-menu--5">
+                            <x-label>5</x-label>
+                        </x-menuitem>
+                        <x-menuitem value="6" id="parallelDownloads-menu--6">
+                            <x-label>6</x-label>
+                        </x-menuitem>
+                        <x-menuitem value="7" id="parallelDownloads-menu--7">
+                            <x-label>7</x-label>
+                        </x-menuitem>
+                        <x-menuitem value="8" id="parallelDownloads-menu--8">
+                            <x-label>8</x-label>
+                        </x-menuitem>
+                        <x-menuitem value="9" id="parallelDownloads-menu--9">
+                            <x-label>9</x-label>
+                        </x-menuitem>
+                        <x-menuitem value="10" id="parallelDownloads-menu--10">
+                            <x-label>10</x-label>
+                        </x-menuitem>
+                        
                     </x-menu>
                 </x-select>
             </x-box>
@@ -102,6 +140,8 @@
             <x-button id="save">Guardar</x-button>
             <x-button id="exit">Cancelar</x-button>
         </x-box>
+
+        <x-label id="warnings"></x-label>
 
     </main>
     <script src="./export-settings-window/frontend-export-options.js"></script>

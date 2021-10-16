@@ -1,9 +1,10 @@
-import { loadLastSearch, loadCurrentLogin, openDir, openExportPreferences, openStatusDialog, stopDownloadProccess } from './ipcRendererEvents.js'
+import { loadLastSearch, loadCurrentLogin, openDir, openUserOptions, openExportPreferences, openStatusDialog, stopDownloadProccess } from './ipcRendererEvents.js'
 import { validateDate } from '../../assets/lib/validateDate.js'
 
 
 const openDirectoryBtn = document.getElementById('open-directory')
 const downloadBtn = document.getElementById('download-button')
+const userOptionsBtn = document.getElementById('user-options-btn')
 const exportSettingsBtn = document.getElementById('export-settings-btn')
 const exitBtn = document.getElementById('exit-button')
 
@@ -39,6 +40,7 @@ function addEvents() {
     endDateInput.addEventListener('click', clear)
     endHourInput.addEventListener('click', clear)
     openDirectoryBtn.addEventListener('click', openDir)
+    userOptionsBtn.addEventListener('click', openUserOptions)
     exportSettingsBtn.addEventListener('click', openExportPreferences)
     downloadBtn.addEventListener('click', openStatusDialog)
     exitBtn.addEventListener('click', exit)
