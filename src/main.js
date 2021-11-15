@@ -4,7 +4,7 @@ const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, session } 
 const { Worker } = require('worker_threads')
 const settings = require('electron-settings')
 const path = require('path')
-const { createDatabase, createSchema, saveSessionSettings, getLastLogin, getLastSearch, saveSearch, getSessionSettings } = require('./databaseEvents')
+const { createDatabase, createSchema, saveSessionSettings, getLastLogin, getLastRecordingDownloaded, getLastSearch, saveSearch, getSessionSettings, clearRecordsTable } = require('./databaseEvents')
 const devtools = require('./devtools')
 const log = require('electron-log')
 const { runLoginEvent, beginDownloadCycle, forceStopProcess, logout } = require('./download-cycle')
@@ -22,6 +22,8 @@ let appTray = null
 const icon = path.join(__dirname, 'assets', 'img', 'icon_black.ico')
 let appIcon = nativeImage.createFromPath(icon)
 const databaseName = 'MATE.db'
+
+let RETRY_TIME = 10000 // ms
 
 let modalOpened = false
 
@@ -172,6 +174,7 @@ function createDefaultSettings() {
 
     checkNewSettings('client', '')
     checkNewSettings('searchMode', 'EarliestFirst')
+    checkNewSettings('persistentMode', false)
     checkNewSettings('outputFormat', 'mp3')
     checkNewSettings('report', 'yes')
     checkNewSettings('overwrite', 'yes')
@@ -266,7 +269,7 @@ ipcMain.on('openDir', (event) => {
       dialogOptions
   ).then((res)=>{
     if(res.canceled === false) {
-      console.log(res)
+      //console.log(res)
       settings.setSync('downloadDirectory', res.filePaths[0])
       event.sender.send('recievePath', res.filePaths[0])
       log.info('Main: Obteniendo nuevo directorio de descarga')
@@ -281,7 +284,7 @@ ipcMain.handle('loadLastSearch', (event) => {
   
   let lastSearch = { ...getLastSearch(settings.getSync('username')) }
   
-  console.log(lastSearch)
+  //console.log(lastSearch)
   
  return lastSearch
 })
@@ -294,17 +297,6 @@ ipcMain.handle('loadLastLogin', (event) => {
     return getLastLogin(settings.getSync('username'), settings.getSync('lastRecorderIP'))
   } 
   else return {}
-
-  // let lastLogin = {}
-  // const remember = settings.hasSync('rememberLastSession') ? settings.getSync('rememberLastSession') : 'no'
-
-  // if (remember == 'yes' && settings.hasSync('username')) {
-  //   lastLogin = {  ...getLastLogin(settings.getSync('username'), settings.getSync('lastRecorderIP'))}
-  // }
-
-  // log.info(`Main: Enviando webContent 'loadLastLogin'`)
-  
-  // return lastLogin
 })
 
 
@@ -408,8 +400,9 @@ ipcMain.on('startDownload', async (event, options) => {
   }
 
   const lastLogin = getLastLogin(settings.getSync('username'), settings.getSync('lastRecorderIP'))
-  console.log(lastLogin)
 
+  //Se reune unicamente la informacion necesaria para guardar en BD en la siguiente variable
+  //TODO: Guardar persistent mode en BD
   const searchData = {
     lastRecorderIP: lastLogin.lastRecorderIP,
     client: settings.hasSync('client') ? settings.getSync('client') : null,
@@ -418,17 +411,15 @@ ipcMain.on('startDownload', async (event, options) => {
     endTime: options.endTime,
     Extension: options.hasOwnProperty('extension') ? options.extension.join(',') : null,
     AgentGroup: options.hasOwnProperty('group') ? options.group : null,
-    //searchMode: options.searchMode,
-    //resultsToSkip: 0,
     downloadDirectory: options.downloadPath
   }
 
-  // se guarda también en BD
+  // se guarda en BD
   saveSearch(searchData)
 
   options = settings.getSync()
 
-  //se recolecta todo lo que llega desde el frontend
+  //se recolecta todo lo que llega desde el frontend para guardarlo en BD
   const sessionSettings = {
                           outputFormat: options.outputFormat,
                           report: options.report,
@@ -451,13 +442,14 @@ ipcMain.on('startDownload', async (event, options) => {
   const savedSession = getLastLogin(options.username,  options.lastRecorderIP)
 
   options = Object.assign(options, savedSession)
-  
-  // for (const key in savedSession) {
-  //   options[key] = savedSession[key] === null ?  settings.getSync(key) : savedSession[key]
-  // }
 
+  clearRecordsTable()
 
-  beginDownloadCycle(event, options)  
+  await beginDownloadCycle(event, options)
+  // await sleep(RETRY_TIME)
+  // console.log('terminando ciclo-----')
+  // options.endTime = getLastRecordingDownloaded()
+  // console.log(options.endTime)
 
 })
 

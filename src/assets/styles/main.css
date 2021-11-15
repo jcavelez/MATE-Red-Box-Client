@@ -14,7 +14,7 @@ body   {
     --subtitle-size: 34px;
     --description-size: 24px;
     --p-size: 21px;
-    --small-size: 10px;
+    --small-size: 11px;
     
     --border-radius: 10px;
 }
@@ -109,10 +109,13 @@ header {
 
 .status x-label{
     font-size: var(--small-size);
+    color: rgb(16 88 196);
 }
 
 .status-connection {
-    margin-left: 10px;
+    margin-left: 3px;
+    margin-right: 3px;
+    font-weight: 600;
 }
 
 .download-section {

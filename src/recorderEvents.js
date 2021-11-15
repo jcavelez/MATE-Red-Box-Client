@@ -92,6 +92,7 @@ async function placeNewSearch(opt, token) {
         'startTime': opt.startTime,
         'endTime': opt.endTime
     }
+
     opts.criteriaList = []
 
     if (opt.hasOwnProperty('extension')) {

@@ -9,17 +9,17 @@ log.transports.file.resolvePath = () => 'C:\\MATE\\Mate.log'
 
 function createNewFileName (callData, downloadOptions) {
     try {
-        console.log(downloadOptions)
+        //console.log(downloadOptions)
         let date = callData.StartDateTime.split(' ')[0].split('/')
         let hour = callData.StartDateTime.split(' ')[1].replaceAll(' ', '_').replaceAll(':', '-')
         hour = hour + '-' + callData.StartDateTime.split(' ')[2]
-        let newName =  downloadOptions.callIDField === 'yes' ? callData.callID + '_' : ''
-        newName +=  downloadOptions.extensionField === 'yes' ? callData.Extension + '_' : ''
-        newName += downloadOptions.channelNameField === 'yes' ? callData.ChannelName + '_' : ''
-        newName += downloadOptions.startDateField === 'yes' ? date[0] + '-' + date[1] + '-' + date[2] + '_' + hour + '_' : ''
-        newName += downloadOptions.otherPartyField === 'yes' ? callData.OtherParty + '_' : ''
-        newName += downloadOptions.agentGroupField === 'yes' ? callData.AgentGroup + '_' : ''
-        newName += downloadOptions.externalCallIDField === 'yes' ? callData.ExternalCallID : ''
+        let newName =  downloadOptions.callIDField === 'yes' ? callData.callID  : ''
+        newName +=  downloadOptions.extensionField === 'yes' ? '_' + callData.Extension : ''
+        newName += downloadOptions.channelNameField === 'yes' ? '_' + callData.ChannelName : ''
+        newName += downloadOptions.startDateField === 'yes' ? '_' + date[0] + '-' + date[1] + '-' + date[2] + '_' + hour : ''
+        newName += downloadOptions.otherPartyField === 'yes' ? '_' + callData.OtherParty : ''
+        newName += downloadOptions.agentGroupField === 'yes' ? '_' + callData.AgentGroup : ''
+        newName += downloadOptions.externalCallIDField === 'yes' ? '_' + callData.ExternalCallID : ''
         console.log(newName)
 
         const dir = path.dirname(callData.ruta)

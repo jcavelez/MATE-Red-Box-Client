@@ -29,6 +29,7 @@ passwordInput.addEventListener('keyup', (event) => {
 async function loadLastLogin() {
     
     const lastLogin = await window.api.invoke('loadLastLogin')
+    console.log(lastLogin)
     
 
     if (lastLogin.hasOwnProperty('lastRecorderIP')) {

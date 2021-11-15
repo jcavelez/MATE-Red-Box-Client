@@ -1,4 +1,5 @@
 const Database = require('better-sqlite3')
+const { refresh } = require('electron-debug')
 const log = require('electron-log')
 log.transports.file.level = 'error'
 log.transports.file.maxSize = 5242880
@@ -111,9 +112,9 @@ function createSchema() {
     try {
         const info = db
             .prepare(`CREATE TABLE Sesiones (
-                username text PRIMARY KEY,
+                lastRecorderIP text NOT NULL,
+                username text NOT NULL,
                 lastPassword text,
-                lastRecorderIP text,
                 outputFormat text,
                 report text,
                 overwrite text,
@@ -127,7 +128,8 @@ function createSchema() {
                 channelNameField text,
                 otherPartyField text,
                 agentGroupField text,
-                client text                
+                client text,
+                PRIMARY KEY (lastRecorderIP, username)             
                 )`)
             .run()
 
@@ -173,7 +175,14 @@ function insertMany(columns, values) {
         const template = new Array(columns.length).fill('?')
         
         const insert = db.prepare(`INSERT INTO Grabaciones (${columns}) VALUES (${template})`)
-        const transaction = db.transaction((values) => { for (const value of values) insert.run(value) })
+        console.log(`INSERT INTO Grabaciones (${columns}) VALUES (${template})`)
+        console.log(values)
+        const transaction = db.transaction((values) => { 
+            for (const value of values) {
+                insert.run(value)
+                console.log(value)
+            }
+        })
 
         transaction(values)
 
@@ -184,8 +193,19 @@ function insertMany(columns, values) {
 }
 
 function saveIDs(IDs) {
-    const values = IDs.map((id) => [id, 0])
-    insertMany(['callID', 'idEstado'], values)
+    IDs.forEach(id => {
+        try {
+            const insert = db.prepare(`INSERT INTO Grabaciones (callID, idEstado) VALUES (?, 0)`)
+            let info = insert.run(id)
+            //console.log(info)
+            log.info(`SQLite3: Insert ID ${id} succeeded`)
+            
+        } catch (error) {
+            log.error(`SQLite3: Insert ${error}`)
+        }
+    })
+    //const values = IDs.map((id) => [id, 0])
+    //insertMany(['callID', 'idEstado'], values)
 }
 
 function saveSearch(data) {
@@ -246,6 +266,27 @@ function getRecordsNoChecked(top=1) {
         const res = select.all()
         log.info('SQLite3: Select Query No Checked succeeded')
         return res
+        
+    } catch (error) {
+        log.error(`SQLite3: ${error}`)
+        return 'error'
+    }
+}
+
+// devuelve obj tipo  { StartDateTime: '14/11/2021 3:00:00 p.m.' }
+function getLastRecordingDownloaded() {
+    try {
+        let query = `SELECT EndDateTime
+                    FROM Grabaciones 
+                    WHERE idEstado = 6
+                    ORDER BY StartDateTime DESC
+                    LIMIT 1`
+        
+        const select = db.prepare(query)
+        const res = select.all()
+        log.info('SQLite3: Select Query Last Recording Downloaded succeeded')
+        
+        return res.length > 0 ? res[0].EndDateTime : ''
         
     } catch (error) {
         log.error(`SQLite3: ${error}`)
@@ -399,7 +440,7 @@ function saveSessionSettings(username, recorder, data) {
             columns.push(`${key} = '${data[key]}' `)
         }
 
-        query += columns.join(', ') + `WHERE username = '${username}' AND lastRecorderIP = '${recorder}'`
+        query += columns.join(', ') + ` WHERE username = '${username}' AND lastRecorderIP = '${recorder}'`
 
         const update = db.prepare(query)
         let info = update.run()
@@ -419,9 +460,6 @@ function saveSessionSettings(username, recorder, data) {
 
             insert.run(values)
         }
-
-        
-
     } catch (error) {
         log.error(`SQLite3: INSERT or UPDATE ${error}`)
     }
@@ -491,6 +529,7 @@ module.exports = {
     getLastSearch,
     getRecordsNoProcesed,
     getRecordsNoChecked,
+    getLastRecordingDownloaded,
     getRecordsReadyToDownload,
     getTotalDownloads,
     getTotalErrors,

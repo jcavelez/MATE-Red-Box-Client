@@ -13,7 +13,7 @@ async function loadCurrentLogin() {
         if (element) element.innerText = text
     }
     
-    replaceText('username', `[${currentLogin.username}]`)
+    replaceText('username', currentLogin.username)
     replaceText('recorder', currentLogin.lastRecorderIP)
 }
 
@@ -66,18 +66,23 @@ function openDir() {
 
 function openStatusDialog(ev) {
     options = {}
+    ev.target.removeEventListener('click', openStatusDialog)
     const startDateInput = document.getElementById('start-date')
     const startHourInput = document.getElementById('start-hour')
     const endDateInput = document.getElementById('end-date')
     const endHourInput = document.getElementById('end-hour')
     const groupInput = document.getElementById('input-group')
+    const endDateSwitch = document.getElementById('switch-end-date')
     const groupSwitch = document.getElementById('switch-group')
     const extensionInput = document.getElementById('input-extension')
     const extensionSwitch = document.getElementById('switch-extension')
 
-    const validatePath = () =>{
+    let startDate = startDateInput.value
+    let startHour = startHourInput.value
+    let endDate = ''
+    let endHour = ''
 
-        let isValidPath = false
+    const validatePath = () =>{
     
         const validatePathRegEx = new RegExp('^[a-z]:(\/|\\\\)([a-zA-Z0-9_ \-]+\\1)*[a-zA-Z0-9_ @\-]+\.$', 'i')
         const directory = document.getElementById('download-section-input').value
@@ -86,51 +91,54 @@ function openStatusDialog(ev) {
     
         if (validPath) {
             options.downloadPath = directory
-            isValidPath = true
         } else {
-            notify('"Ruta inválida". Por favor verifique la carpeta de descarga sea una ruta válida.')
-            const modal = document.getElementById("download-dialog")
-            modal.close()
+            notify('"Ruta inválida". Por favor verifique que el campo Ruta de Descarga contenga una ruta válida.')
+            document.getElementById("download-dialog").close()
         }
     
-        return isValidPath
+        return validPath
     }
     
     const getSearchFields =() => {
-        options.startTime = formatStartDate(startDateInput.value, startHourInput.value)
-        options.endTime = formatEndDate(endDateInput.value, endHourInput.value)
+        options.startTime = formatStartDate(startDate, startHour)
+        options.endTime = formatEndDate(endDate, endHour)
+        options.persistentMode = !endDateSwitch.toggled
         
-        console.log('extensionSwitch.toggled ' + extensionSwitch.toggled)
         if (extensionSwitch.toggled && extensionInput.value.trim() != '') {
             let extensions = extensionInput.value.split(',')
             extensions = extensions.map(ext => ext.trim())
             options.extension = extensions.filter(ext => ext != '')
-            console.log(options.extension)
         }
 
         if (groupSwitch.toggled && groupInput.value.trim() != '') {
             let groups = groupInput.value.split(',')
             groups = groups.map(gr => gr.trim())
             options.group = groups.filter(gr => gr != '')
-            console.log(options.group)
         }
     }
     
     const checkDates = () => {
-        let startDate = document.getElementById('start-date').value
-        let endDate = document.getElementById('end-date').value
-    
-        if (validateDate(startDate) && validateDate(endDate)) {
-            if(formatEndDate(endDateInput.value, endHourInput.value) < formatStartDate(startDateInput.value, startHourInput.value)){
-                notify('La fecha final debe ser mayor que la fecha inicial')
-                return false
-            }
-    
-            return true
+        if (endDateSwitch.toggled) {
+            endDate = endDateInput.value
+            endHour = endHourInput.value
         } else {
+            let d = new Date()
+
+            endDate = `${zeroFill(d.getDate(), 2)}/${zeroFill(d.getMonth() + 1, 2)}/${d.getFullYear()}`
+            endHour = `${zeroFill(d.getHours(),2)}:${zeroFill(d.getMinutes(),2)}`
+        }
+    
+        if (validateDate(startDate) && validateDate(endDate) && 
+            (formatEndDate(endDate, endHour) >= formatStartDate(startDate, startHour))
+        ) {
+            return true
+        } else if (formatEndDate(endDate, endHour) < formatStartDate(startDate, startHour)){
+            notify('La fecha final debe ser mayor que la fecha inicial')
+            return false
+        } else if ((validateDate(startDate) && validateDate(endDate)) == false) {
             notify('La fecha que ingresó no es válida')
             return false
-        }
+        } 
     }
     
     const validateForm = () => {
@@ -141,11 +149,10 @@ function openStatusDialog(ev) {
     }
 
 
-    ev.target.removeEventListener('click', openStatusDialog)
-    const valid = validateForm()
-    if (valid) {
+    const isValid = validateForm()
+
+    if (isValid) {
         getSearchFields()
-        console.log(options)
         requestStartDownload(options)
     }
 }
@@ -308,6 +315,20 @@ window.api.receive('searchUpdate', (data) => {
 
 window.api.receive('userOptionsWindowClosed', off)
 window.api.receive('exportsWindowClosed', off)
+
+
+
+
+
+
+const zeroFill = (number, width ) => {
+    width -= number.toString().length;
+    if ( width > 0 )
+    {
+        return new Array( width + (/\./.test( number ) ? 2 : 1) ).join( '0' ) + number;
+    }
+    return number + ""; // always return a string
+}
 
 
 export { openDir, loadLastSearch, loadCurrentLogin, requestStartDownload, stopDownloadProccess, openUserOptions, openExportPreferences, openStatusDialog } 

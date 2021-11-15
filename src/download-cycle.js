@@ -3,7 +3,8 @@ const log = require('electron-log')
 const path = require('path')
 const sleep = require('./sleep.js')
 const counter = require('./assets/lib/counter.js')
-const { ExternalCallIDCheck }= require('./assets/lib/EMTELCO.js')
+const { ExternalCallIDCheck } = require('./assets/lib/EMTELCO.js')
+const { getNewStartTime, getNewEndTime } = require('./assets/lib/newDatesPersistentMode.js')
 const { logoutRecorder } = require('./recorderEvents.js')
 const { clearRecordsTable } = require('./databaseEvents')
 const { getRecordsNoProcesed,
@@ -13,6 +14,7 @@ const { getRecordsNoProcesed,
         getTotalErrors,
         getTotalPartials,
         getTotalRows,
+        getLastRecordingDownloaded,
         updateRecords,
         saveIDs,
         saveSearch } = require('./databaseEvents')
@@ -32,6 +34,9 @@ let currentToken = null
 let loginError = null
 
 let MAX_DOWNLOAD_WORKERS = 1
+let PERSISTENT_MODE = false
+let persistentModeRunning = false
+const DELAY = 12000 // ms
 let currentEvent = null
 
 const errorLogPath = `C:\\MATE\\download-errors.txt`
@@ -46,6 +51,7 @@ async function runLoginEvent(event, loginData) {
   } else {
     updateCredentials(loginData.recorder, loginData.username, loginData.password)
   }
+
   await updateToken()
 
   log.info('Main: Validando login')
@@ -126,7 +132,7 @@ function renewToken () {
 
 const beginDownloadCycle = async (event, options) => {
 
-  clearRecordsTable()
+  //clearRecordsTable() // se cambia para main
 
   currentEvent = event
    
@@ -165,8 +171,8 @@ const processPartialSearch = async (options) => {
       downloadRunning = false
       return
     } else {
-      log.info(`Main: Descarga parcial activa. Esperando 1 segundos.`)
-      await sleep(1000)
+      log.info(`Main: Descarga parcial activa. Esperando 2 segundos.`)
+      await sleep(2000)
       const downloads = getTotalDownloads()[0].total
       const total = getTotalRows()[0].total
       currentEvent.sender.send('searchUpdate', {successes: downloads, total: total})
@@ -193,6 +199,8 @@ const processPartialSearch = async (options) => {
 
 const createSearchWorker = async (options) => {
   log.info('Main: Creando search worker.')
+  PERSISTENT_MODE = options.persistentMode
+  persistentModeRunning = PERSISTENT_MODE
   options.token = currentToken
   const workerURL = `${path.join(__dirname, 'search-worker.js')}`
   const data = {
@@ -206,44 +214,59 @@ const createSearchWorker = async (options) => {
   worker.on('message', async (msg) => {
 
     if (msg.type === 'results') {
-      //ordenando resultados antes de guardarlos para hacer de forma mas eficiente elcheck de emtelco
+      //ordenando resultados antes de guardarlos para hacer de forma mas eficiente el check de emtelco
+      console.log(msg.IDs)
       saveIDs(msg.IDs.sort((a, b) => a - b))
       log.info(`Main: ${msg.IDs.length} IDs guardados en BD`)
       await processPartialSearch(options)
-      // el API devuelve en paquetes de 1000, por lo tanto si el resultado es 1000, significa
-      //que hay resultados pendientes.
-      if (msg.IDs.length === 1000) {
+      // el API devuelve en paquetes de 1000, por lo tanto si el resultado es 1000, significa que hay resultados pendientes.
+      //continua la busqueda
+      if (msg.IDs.length === 1000 ) {
         worker.postMessage({type: 'search'})
         currentEvent.sender.send('recorderSearching')
-      } else {
-        try {
-          searchWorker.postMessage({type: 'end'})
-          log.info('Main: Busqueda terminada. Finalizando procesos.')
-          await sleep(2000)
-          currentEvent.sender.send('finishing')
-          await sleep(2000)
-          const successes = getTotalDownloads()[0].total
-          const failures = getTotalErrors()[0].total
-          const partials = getTotalPartials()[0].total
-          currentEvent.sender.send('queryFinished',
-                                    {
-                                      successes: successes,
-                                      failures: failures,
-                                      partials: partials})
-          searchWorker = null
-        } catch (error) {
-          log.error(`Main: ${error}`)
-        }
+      } 
+      //si el ultimo lote de IDs tenia menos de 1000 resultados significa que es el ultimo lote de la busqueda
+      //Busqueda terminada
+      else if (msg.IDs.length < 1000 && !PERSISTENT_MODE){
+        await stopSearchingProcess()
+      }
+      
+      //empieza una nueva busqueda con nuevas fechas
+      else if (msg.IDs.length < 1000 && PERSISTENT_MODE) {
+        let d = getNewStartTime()
+        options.startTime = d === null ? options.startTime : d
+        options.endTime = getNewEndTime()
+
+        worker.postMessage({
+          type: 'updateSearch',
+          newStartTime: options.startTime,
+          newEndTime: options.endTime
+        })
       }
     }
+    
 
-    else if (msg.type === 'complete') {
-      log.info('Main: Busqueda terminada. Finalizando proceso.')
-      searchWorker.postMessage({type: 'end'})
-      searchWorker = null
+    else if ((msg.type === 'complete' || msg.type === 'error') && PERSISTENT_MODE ) {
+      console.log('MODO PERSISTENTE -----------------------')
+      await sleep(DELAY)
+      let d = getNewStartTime()
+      options.startTime = d === null ? options.startTime : d
+      options.endTime = getNewEndTime()
+      
+      worker.postMessage({
+                            type: 'updateSearch',
+                            newStartTime: options.startTime,
+                            newEndTime: options.endTime
+                          })
     }
 
-    else if (msg.type === 'error') {
+    else if (msg.type === 'complete' && !PERSISTENT_MODE) {
+      log.info('Main: Busqueda terminada. Finalizando proceso.')
+      searchWorker.postMessage({type: 'end'})
+      await stopSearchingProcess()
+    }
+
+    else if (msg.type === 'error' && !PERSISTENT_MODE) {
       log.info('Main: Enviando error a Renderer')
       currentEvent.sender.send('searchError', { error: msg.error })
       searchWorker.postMessage({type: 'end'})
@@ -404,8 +427,31 @@ const forceStopProcess = () => {
   
   currentEvent.sender.send('finishing')
   downloadRunning = false // Esto hara que la funcion ProcessPartialSearch detenga sus subprocesos pendientes
+  stopSearchingProcess() //desloguea el worker y mata el proceso
   
   renewToken()
+}
+
+const stopSearchingProcess = async () => {
+  try {
+    searchWorker.postMessage({type: 'end'})
+    log.info('Main: Busqueda terminada. Finalizando procesos.')
+    await sleep(2000)
+    currentEvent.sender.send('finishing')
+    await sleep(2000)
+    const successes = getTotalDownloads()[0].total
+    const failures = getTotalErrors()[0].total
+    const partials = getTotalPartials()[0].total
+    currentEvent.sender.send('queryFinished',
+                              {
+                                successes: successes,
+                                failures: failures,
+                                partials: partials
+                              })
+    searchWorker = null
+  } catch (error) {
+    log.error(`Main: ${error}`)
+  }
 }
 
 const logout = async (IP) => {
