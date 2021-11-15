@@ -111,9 +111,9 @@ function createSchema() {
     try {
         const info = db
             .prepare(`CREATE TABLE Sesiones (
-                username text PRIMARY KEY,
+                lastRecorderIP text NOT NULL,
+                username text NOT NULL,
                 lastPassword text,
-                lastRecorderIP text,
                 outputFormat text,
                 report text,
                 overwrite text,
@@ -127,7 +127,8 @@ function createSchema() {
                 channelNameField text,
                 otherPartyField text,
                 agentGroupField text,
-                client text                
+                client text,
+                PRIMARY KEY (lastRecorderIP, username)             
                 )`)
             .run()
 
@@ -246,6 +247,26 @@ function getRecordsNoChecked(top=1) {
         const res = select.all()
         log.info('SQLite3: Select Query No Checked succeeded')
         return res
+        
+    } catch (error) {
+        log.error(`SQLite3: ${error}`)
+        return 'error'
+    }
+}
+
+// devuelve obj tipo  { StartDateTime: '14/11/2021 3:00:00 p.m.' }
+function getLastRecordingDownloaded() {
+    try {
+        let query = `SELECT StartDateTime
+                    FROM Grabaciones 
+                    WHERE idEstado = 6
+                    ORDER BY StartDateTime DESC
+                    LIMIT 1`
+        
+        const select = db.prepare(query)
+        const res = select.all()
+        log.info('SQLite3: Select Query Last Recorder Downloaded succeeded')
+        return res[0]
         
     } catch (error) {
         log.error(`SQLite3: ${error}`)
@@ -399,7 +420,7 @@ function saveSessionSettings(username, recorder, data) {
             columns.push(`${key} = '${data[key]}' `)
         }
 
-        query += columns.join(', ') + `WHERE username = '${username}' AND lastRecorderIP = '${recorder}'`
+        query += columns.join(', ') + ` WHERE username = '${username}' AND lastRecorderIP = '${recorder}'`
 
         const update = db.prepare(query)
         let info = update.run()
@@ -419,9 +440,6 @@ function saveSessionSettings(username, recorder, data) {
 
             insert.run(values)
         }
-
-        
-
     } catch (error) {
         log.error(`SQLite3: INSERT or UPDATE ${error}`)
     }
@@ -491,6 +509,7 @@ module.exports = {
     getLastSearch,
     getRecordsNoProcesed,
     getRecordsNoChecked,
+    getLastRecordingDownloaded,
     getRecordsReadyToDownload,
     getTotalDownloads,
     getTotalErrors,

@@ -4,6 +4,7 @@ import { validateDate } from '../../assets/lib/validateDate.js'
 
 const openDirectoryBtn = document.getElementById('open-directory')
 const downloadBtn = document.getElementById('download-button')
+const stopButton = document.getElementById('stop-btn')
 const userOptionsBtn = document.getElementById('user-options-btn')
 const exportSettingsBtn = document.getElementById('export-settings-btn')
 const exitBtn = document.getElementById('exit-button')
@@ -19,7 +20,6 @@ const errorEndDate = document.getElementById("end-date-error")
 const endDateInput = document.getElementById('end-date')
 const endHourInput = document.getElementById('end-hour')
 
-const stopButton = document.getElementById('stop-btn')
 const downloadModal = document.getElementById("download-dialog");
 
 window.addEventListener('load', addEvents)
@@ -32,6 +32,12 @@ function addEvents() {
     }
 
     switchEndDate.addEventListener('toggle', toggleBox)
+    switchEndDate.addEventListener('toggle', () => {
+        if(!switchEndDate.toggled) {
+            document.getElementById('end-date').value = ''
+            document.getElementById('end-hour').value = ''
+        }
+    })
     switchExtension.addEventListener('toggle', toggleBox)
     switchGroup.addEventListener('toggle', toggleBox)
 

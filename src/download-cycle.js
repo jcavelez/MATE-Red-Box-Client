@@ -3,7 +3,8 @@ const log = require('electron-log')
 const path = require('path')
 const sleep = require('./sleep.js')
 const counter = require('./assets/lib/counter.js')
-const { ExternalCallIDCheck }= require('./assets/lib/EMTELCO.js')
+const { ExternalCallIDCheck } = require('./assets/lib/EMTELCO.js')
+const zeroFill = require('./assets/lib/zeroFill.js')
 const { logoutRecorder } = require('./recorderEvents.js')
 const { clearRecordsTable } = require('./databaseEvents')
 const { getRecordsNoProcesed,
@@ -13,6 +14,7 @@ const { getRecordsNoProcesed,
         getTotalErrors,
         getTotalPartials,
         getTotalRows,
+        getLastRecordingDownloaded,
         updateRecords,
         saveIDs,
         saveSearch } = require('./databaseEvents')
@@ -126,7 +128,7 @@ function renewToken () {
 
 const beginDownloadCycle = async (event, options) => {
 
-  clearRecordsTable()
+  //clearRecordsTable() // se cambia para main
 
   currentEvent = event
    
@@ -165,8 +167,8 @@ const processPartialSearch = async (options) => {
       downloadRunning = false
       return
     } else {
-      log.info(`Main: Descarga parcial activa. Esperando 1 segundos.`)
-      await sleep(1000)
+      log.info(`Main: Descarga parcial activa. Esperando 2 segundos.`)
+      await sleep(2000)
       const downloads = getTotalDownloads()[0].total
       const total = getTotalRows()[0].total
       currentEvent.sender.send('searchUpdate', {successes: downloads, total: total})
@@ -204,9 +206,9 @@ const createSearchWorker = async (options) => {
   const worker = new Worker(workerURL, data) 
 
   worker.on('message', async (msg) => {
-
+    log.info('mensaje: ' + msg.type)
     if (msg.type === 'results') {
-      //ordenando resultados antes de guardarlos para hacer de forma mas eficiente elcheck de emtelco
+      //ordenando resultados antes de guardarlos para hacer de forma mas eficiente el check de emtelco
       saveIDs(msg.IDs.sort((a, b) => a - b))
       log.info(`Main: ${msg.IDs.length} IDs guardados en BD`)
       await processPartialSearch(options)
@@ -215,7 +217,9 @@ const createSearchWorker = async (options) => {
       if (msg.IDs.length === 1000) {
         worker.postMessage({type: 'search'})
         currentEvent.sender.send('recorderSearching')
-      } else {
+      } 
+      //si el ultimo lote de IDs tenia menos de 1000 resultados significa que es el ultimo lote de la busqueda
+      else if (msg.IDs.length < 1000 && !options.persistentMode){
         try {
           searchWorker.postMessage({type: 'end'})
           log.info('Main: Busqueda terminada. Finalizando procesos.')
@@ -229,21 +233,108 @@ const createSearchWorker = async (options) => {
                                     {
                                       successes: successes,
                                       failures: failures,
-                                      partials: partials})
+                                      partials: partials
+                                    })
           searchWorker = null
         } catch (error) {
           log.error(`Main: ${error}`)
         }
       }
+      else if (options.persistentMode) {
+        worker.postMessage({type: 'search'})
+      }
     }
 
-    else if (msg.type === 'complete') {
+    else if ((msg.type === 'complete' || msg.type === 'error') && options.persistentMode) {
+      
+      let newStart = getLastRecordingDownloaded().StartDateTime
+      let newStartDate = newStart.split(' ')[0]
+      let newStartHour = newStart.split(' ')[1]
+      let time = newStart.split(' ')[1]
+      let yyyy = newStartDate.split('/')[2]
+      let MM = zeroFill(newStartDate.split('/')[1], 2)
+      let dd = zeroFill(newStartDate.split('/')[0], 2)
+      let hh = zeroFill(newStartHour.split(':')[0], 2)
+      let mm = zeroFill(newStartHour.split(':')[1], 2)
+      let ss = zeroFill(newStartHour.split(':')[2], 2)
+      hh = time === 'a.m.' ? hh : (parseInt(hh) + 12).toString()
+      hh = time === 'a.m.' && hh == '12' ? '00' : hh
+      if (parseInt(ss) + 1 > 59) {
+        ss = '00'
+        mm = zeroFill((parseInt(mm) + 1).toString(), 2)
+      }
+      if (parseInt(mm) > 59) {
+        mm = '00'
+        hh = zeroFill((parseInt(hh) + 1).toString(), 2)
+      }
+      if (parseInt(hh) > 23) {
+        hh = '00'
+        dd = zeroFill((parseInt(dd) + 1).toString(), 2)
+      }
+      switch (dd) {
+        case '32':
+          dd = '01'
+          mm = zeroFill((parseInt(mm) + 1).toString(), 2)
+          break
+  
+        case '31':
+          //si el nuevo mes está entres los meses que tiene 30 dias
+          if (['04', '06', '07', '11'].indexOf(mm)) {
+            dd = '01'
+            mm = zeroFill((parseInt(mm) + 1).toString(), 2)
+          }
+          break
+  
+        case '30':
+          if (mm == '02') {
+            dd = '01'
+            mm = '03'
+          }
+          break
+  
+        case '29':
+          //si es febrero de año no bisiesto
+          if(mm == '02' && parseInt(yyyy) % 4 > 0) {
+            dd = '01'
+            mm = '03'
+          }
+          break
+      
+        default:
+          break;
+      }
+  
+      if (mm == '13') {
+        mm = '01'
+        yyyy = (parseInt(yyyy) + 1).toString()
+      }
+  
+      options.startTime = yyyy+MM+dd+hh+mm+ss
+      
+      //empieza el calculo de la nueva fecha final
+      let d = new Date()
+      
+      options.endTime = d.getFullYear() + 
+                        zeroFill(d.getMonth() + 1, 2) + 
+                        zeroFill(d.getDate(), 2) + 
+                        zeroFill(d.getHours(),2) + 
+                        zeroFill(d.getMinutes(),2) + 
+                        zeroFill(d.getSeconds(),2)
+      
+      worker.postMessage({
+                            type: 'updateSearch',
+                            newStartTime: options.startTime,
+                            newEndTime: options.endTime
+                          })
+    }
+
+    else if (msg.type === 'complete' && !options.persistentMode) {
       log.info('Main: Busqueda terminada. Finalizando proceso.')
       searchWorker.postMessage({type: 'end'})
       searchWorker = null
     }
 
-    else if (msg.type === 'error') {
+    else if (msg.type === 'error' && !options.persistentMode) {
       log.info('Main: Enviando error a Renderer')
       currentEvent.sender.send('searchError', { error: msg.error })
       searchWorker.postMessage({type: 'end'})
@@ -411,6 +502,19 @@ const forceStopProcess = () => {
 const logout = async (IP) => {
   await logoutRecorder(IP, currentToken)
   
+}
+
+function formatStartDate (date, hour) {
+  const s = date.split('/')
+  const t = hour.split(':')
+
+  return  `${s[2]}${s[1]}${s[0]}${t[0]?t[0]:'00'}${t[1]?t[1]:'00'}00`
+}
+function formatEndDate (date, hour) {
+  const s = date.split('/')
+  const t = hour.split(':')
+
+  return  `${s[2]}${s[1]}${s[0]}${t[0]?t[0]:'00'}${t[1]?t[1]:'00'}59`
 }
 
  

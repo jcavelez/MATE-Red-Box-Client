@@ -24,6 +24,18 @@ parentPort.on('message', async (msg) => {
     if (msg.type == 'search') {
         await newSearch()
     } 
+
+    else if (msg.type == 'updateSearch') {
+      log.info(`Worker Search ID ${threadId}: Actualizando búsqueda modo persistente`)
+
+      options.resultsToSkip = 0
+      options.progress = 0
+      options.status = 'incomplete'
+      options.startTime = msg.newStartTime
+      options.endTime = msg.newEndTime
+
+      await newSearch()
+    }
     
     else if (msg.type === 'end') {
         log.info(`Worker Search ID ${threadId}: exit()`)
@@ -34,6 +46,7 @@ parentPort.on('message', async (msg) => {
 
 
 const newSearch = async () => {
+
     log.info(`Worker Search ID ${threadId}: Iniciando busqueda`)
     
     let searchStatus = await placeNewSearch(options, token)
@@ -48,16 +61,15 @@ const newSearch = async () => {
 
     log.info(`Worker Search ID ${threadId}: Estado de busqueda recibido del grabador. Estado: ${searchStatus.statusShort}`)
 
-
+    //si el grabador tuvo una respuesta correcta
     if (searchStatus.hasOwnProperty('resultsFound')) {
+      console.log(searchStatus.resultsFound)
       if(searchStatus.resultsFound == '0') {
         options.status = 'complete'
         parentPort.postMessage({type: 'error', error: 'Busqueda sin resultados'})
         return
-     
       }
     }
-    
     
     //se considera busqueda incompleta mientras placeNewSearch devuelva 
     //menos de 1000 resultados de acuerdo al API

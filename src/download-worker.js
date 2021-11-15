@@ -11,7 +11,7 @@ log.transports.file.resolvePath = () => 'C:\\MATE\\Mate.log'
 
 log.info(`Worker Download Audio ID ${threadId}: Creado`)
 
-console.log(workerData.options)
+//console.log(workerData.options)
 
 let downloadOptions = workerData.options
 const IP = downloadOptions.lastRecorderIP

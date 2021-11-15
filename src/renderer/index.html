@@ -29,14 +29,14 @@
         let newValue = value.replace(/[^0-9]/g, '').replace(/(\..*)\./g, '$1')
         const hour = (index) => (index === 1)
         const formatH = (value, index) => (index === 0 && value > 2)
-        const formatHH = (index, src) => (index === 1 && src[index - 1] == 2)
+        const formatHH = (index, src) => (index === 1 && src[index - 1] == 2 && src[index] > 3)
         const formatM = (value, index) => (index === 2 && value > 5)
         
         // on delete key.  
         if (!event.data) {
             return value;
         }
-        
+
         return newValue
                 .split('')
                 .map((v, i) => formatH(v, i) ? 2 : v)
@@ -78,9 +78,8 @@
 
     <main>
         <section class="status">
-            <x-label id="username" class="status-connection"></x-label>
-            <x-label class="status-connection">Conectado a</x-label>
-            <x-label id="recorder" class="status-connection"></x-label>
+            <x-label> Usuario: </x-label><x-label id="username" class="status-connection"> </x-label> 
+            <x-label> Grabador: </x-label><x-label id="recorder" class="status-connection"> </x-label> 
         </section>
 
         <section class="download-section">
@@ -109,7 +108,7 @@
             <x-card class="filter" data-field="end-date" disabled>
                 <x-box class="filter-top">
                     <x-label class="filter-name" >Fecha Final</x-label>
-                    <x-switch id="switch-end-date" toggled disabled></x-switch>
+                    <x-switch id="switch-end-date" toggled></x-switch>
                 </x-box>
                 <x-box class="filter-botton">
                     <input  type="tel" maxlength="10" name="" id="end-date" class="filter-date" placeholder="dd/mm/aaa" oninput="this.value = DDMMYYYY(this.value, event)">
