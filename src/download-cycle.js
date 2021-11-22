@@ -158,9 +158,13 @@ const processPartialSearch = async (options) => {
   log.info(`Main: Creando Details Workers`)
   let detailsWorkers = await createDetailsWorkers(options)
   currentEvent.sender.send('recorderDownloading')
-  specialClientChecks(options.client)
-  //Tiempo para que el SpecialCheck comience su revision
-  await sleep(10000)
+
+  if (options.client) {
+    specialClientChecks(options.client)
+    //Tiempo para que el SpecialCheck haga su revision
+    await sleep(10000)
+  }
+
   let downloadWorkers = await createDownloadWorkers(options)
 
   tempWorkers = [].concat(detailsWorkers, downloadWorkers)
@@ -170,8 +174,9 @@ const processPartialSearch = async (options) => {
     if(threadIds.findIndex(id => id != -1) === -1) {
       downloadRunning = false
       return
+
     } else {
-      log.info(`Main: Descarga parcial activa. Esperando 2 segundos.`)
+      //log.info(`Main: Descarga parcial activa. Esperando 2 segundos.`)
       await sleep(2000)
       const downloads = getTotalDownloads()[0].total
       const total = getTotalRows()[0].total
@@ -212,10 +217,9 @@ const createSearchWorker = async (options) => {
   const worker = new Worker(workerURL, data) 
 
   worker.on('message', async (msg) => {
-
+    log.info('mensaje: ' + msg.type)
     if (msg.type === 'results') {
       //ordenando resultados antes de guardarlos para hacer de forma mas eficiente el check de emtelco
-      console.log(msg.IDs)
       saveIDs(msg.IDs.sort((a, b) => a - b))
       log.info(`Main: ${msg.IDs.length} IDs guardados en BD`)
       await processPartialSearch(options)
@@ -243,11 +247,14 @@ const createSearchWorker = async (options) => {
           newEndTime: options.endTime
         })
       }
+      else if (options.persistentMode) {
+        worker.postMessage({type: 'search'})
+      }
     }
     
 
     else if ((msg.type === 'complete' || msg.type === 'error') && PERSISTENT_MODE ) {
-      console.log('MODO PERSISTENTE -----------------------')
+      //console.log('MODO PERSISTENTE -----------------------')
       await sleep(DELAY)
       let d = getNewStartTime()
       options.startTime = d === null ? options.startTime : d
@@ -314,7 +321,9 @@ const createDetailsWorkers = async (options) => {
         else if (msg.type === 'newToken') {
           log.info(`Main:. Solicitud de nuevo token recibida.`)
           renewToken()
-        } else if (msg.type === 'update') {
+        }
+        
+        else if (msg.type === 'update') {
           log.info(`Main: CallID ${msg.callID} cambiando estado BD a ${msg.callData.idEstado}.`)
           updateRecords(msg.callData, msg.callID)
         }
@@ -423,7 +432,7 @@ function createDownloadWorker(options) {
 
 
 const forceStopProcess = () => {
-  log.info(`Main: Senal stop recibida. Forzando la finalizacion de procesos.`)
+  log.info(`Main: Forzando la finalizacion de procesos.`)
   
   currentEvent.sender.send('finishing')
   downloadRunning = false // Esto hara que la funcion ProcessPartialSearch detenga sus subprocesos pendientes

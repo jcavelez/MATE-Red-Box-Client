@@ -74,8 +74,7 @@ function setupErrors(win) {
     win.on('unresponsive', () => { handleUnresponsive(win)
     })
 
-    process.on('uncaughtException', (err) => { handleUncaughtException(win, err)
-    })
+    process.on('uncaughtException', (err) => handleUncaughtException(win, err))
 
 }
 

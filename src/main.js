@@ -382,6 +382,10 @@ ipcMain.handle('loadExportPreferences', () => {
 
 ipcMain.on('startDownload', async (event, options) => {
   log.info('Main: Senal de inicio de busqueda recibida')
+
+
+
+
   
   //Se guarda la info recibida de la web en los settings de electron para cargarlos 
   //la proxima vez que se abra la aplicación.
@@ -457,7 +461,7 @@ ipcMain.on('startDownload', async (event, options) => {
 //............. Stop Download Event ........................
 
 ipcMain.on('stop', () => {
-  log.info(`Main: Message stop received`)
+  log.info(`Main: On event 'stop'`)
   forceStopProcess()
 })
 
@@ -465,7 +469,7 @@ ipcMain.on('stop', () => {
 //................. Update Export Preferences Event .......................
 
 ipcMain.on('updatePreferences', (event, prefs) => {
-  log.info(`Main: Message updatePreferences received`)
+  log.info(`Main: On event 'update preferences`)
   for (const key in prefs) {
     log.info(`Main: Guardando ${key} = ${prefs[key]}`)
     settings.setSync(key, prefs[key])

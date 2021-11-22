@@ -32,7 +32,7 @@ parentPort.on('message', async (msg) => {
     } 
 
     else if (msg.type == 'updateSearch') {
-      log.info(`Worker Search ID ${threadId}: Actualizando búsqueda modo persistente`)
+      log.info(`Worker Search ID ${threadId}: Actualizando busqueda modo persistente`)
 
       options.resultsToSkip = 0
       options.progress = 0
@@ -70,7 +70,6 @@ const newSearch = async () => {
 
     //si el grabador tuvo una respuesta correcta
     if (searchStatus.hasOwnProperty('resultsFound')) { 
-      //console.log(searchStatus.resultsFound)
       if(searchStatus.resultsFound == '0') {
         options.status = 'complete'
         parentPort.postMessage({type: 'error', error: 'Busqueda sin resultados'})
@@ -88,7 +87,7 @@ const newSearch = async () => {
         log.info(`Worker Search ID ${threadId}: Array de IDs recibido'`)
         options.resultsToSkip += newSearchResults.length
         const IDs = newSearchResults.map(res => res.callID)
-        log.info(`Worker Search ID ${threadId}:Guardando resultados en BD`)
+        log.info(`Worker Search ID ${threadId}: Guardando resultados en BD`)
     
         parentPort.postMessage({type: 'results', IDs: IDs})
   
@@ -139,11 +138,11 @@ async function keepSession() {
 
   while(true) {
       await sleep(290000)
-      log.info(`Worker Search: Enviando keep alive`)
+      log.info(`Worker Search ID ${threadId}: Enviando keep alive`)
       const res = await keepAlive(IP, currentToken)
 
       if(res.hasOwnProperty('error')) {
-          log.error(`Worker Search: Error ${res.error}`)
+          log.error(`Worker Search ID ${threadId}: Error ${res.error}`)
           logout()
           const r = await login()
           await checkLogin(r)

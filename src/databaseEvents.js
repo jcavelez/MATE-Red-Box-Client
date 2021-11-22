@@ -175,12 +175,9 @@ function insertMany(columns, values) {
         const template = new Array(columns.length).fill('?')
         
         const insert = db.prepare(`INSERT INTO Grabaciones (${columns}) VALUES (${template})`)
-        console.log(`INSERT INTO Grabaciones (${columns}) VALUES (${template})`)
-        console.log(values)
         const transaction = db.transaction((values) => { 
             for (const value of values) {
                 insert.run(value)
-                console.log(value)
             }
         })
 
@@ -197,15 +194,12 @@ function saveIDs(IDs) {
         try {
             const insert = db.prepare(`INSERT INTO Grabaciones (callID, idEstado) VALUES (?, 0)`)
             let info = insert.run(id)
-            //console.log(info)
             log.info(`SQLite3: Insert ID ${id} succeeded`)
             
         } catch (error) {
             log.error(`SQLite3: Insert ${error}`)
         }
     })
-    //const values = IDs.map((id) => [id, 0])
-    //insertMany(['callID', 'idEstado'], values)
 }
 
 function saveSearch(data) {
@@ -273,10 +267,10 @@ function getRecordsNoChecked(top=1) {
     }
 }
 
-// devuelve obj tipo  { StartDateTime: '14/11/2021 3:00:00 p.m.' }
+// devuelve string, ya sea vacio o tipo '14/11/2021 3:00:00 p.m.' (segun sea el formato configurado en la grabadora)
 function getLastRecordingDownloaded() {
     try {
-        let query = `SELECT EndDateTime
+        let query = `SELECT StartDateTime
                     FROM Grabaciones 
                     WHERE idEstado = 6
                     ORDER BY StartDateTime DESC
@@ -286,7 +280,7 @@ function getLastRecordingDownloaded() {
         const res = select.all()
         log.info('SQLite3: Select Query Last Recording Downloaded succeeded')
         
-        return res.length > 0 ? res[0].EndDateTime : ''
+        return res.length > 0 ? res[0].StartDateTime : ''
         
     } catch (error) {
         log.error(`SQLite3: ${error}`)
@@ -309,7 +303,7 @@ function updateRecords(data, callID) {
         log.info(`SQLite3: CallID ${callID} - Update Record succeeded`)
 
     } catch (error){
-        log.error(`SQLite3: CallID ${callID} - Update ${error}`)
+        log.error(`SQLite3: CallID ${callID} - Update Record failed ${error}`)
     }
 }
 
@@ -364,7 +358,7 @@ function getExternalCallID(range, Extension) {
     }
 }
 
-function getTotalDownloads(){
+function getTotalDownloads() {
     try {
         let query = `SELECT count(callID) as total
                     FROM Grabaciones 
@@ -373,6 +367,7 @@ function getTotalDownloads(){
         const select = db.prepare(query)
         const res = select.all()
         log.info('SQLite3: Select Query Total Downloads succeeded')
+
         return res
                 
     } catch (error) {
@@ -380,7 +375,7 @@ function getTotalDownloads(){
     }
 }
 
-function getTotalErrors(){
+function getTotalErrors() {
     try {
         let query = `SELECT count(callID) as total
                     FROM Grabaciones 
@@ -389,6 +384,7 @@ function getTotalErrors(){
         const select = db.prepare(query)
         const res = select.all()
         log.info('SQLite3: Select Query Total Errors succeeded')
+
         return res
                 
     } catch (error) {
@@ -396,7 +392,7 @@ function getTotalErrors(){
     }
 }
 
-function getTotalPartials(){
+function getTotalPartials() {
     try {
         let query = `SELECT count(callID) as total
                     FROM Grabaciones 
@@ -405,6 +401,7 @@ function getTotalPartials(){
         const select = db.prepare(query)
         const res = select.all()
         log.info('SQLite3: Select Query Total Partials succeeded')
+
         return res
                 
     } catch (error) {
@@ -412,7 +409,7 @@ function getTotalPartials(){
     }
 }
 
-function getTotalRows(){
+function getTotalRows() {
     try {
         let query = `SELECT count(callID) as total
                     FROM Grabaciones `
@@ -420,6 +417,7 @@ function getTotalRows(){
         const select = db.prepare(query)
         const res = select.all()
         log.info('SQLite3: Select Query Total Rows succeeded')
+        
         return res
                 
     } catch (error) {

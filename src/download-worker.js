@@ -63,32 +63,6 @@ parentPort.on('message', async (msg) => {
 })
 
 
-async function login () {
-    log.info(`Worker Download Audio ID ${threadId}: Solicitud login a ${IP}`)
-    const res = await loginRecorder(IP, username, password)
-    return res
-    
-}
-
-async function checkLogin (response) {
-    if (response.hasOwnProperty('authToken')) {
-      log.info(`Worker Download Audio ID ${threadId}: Login OK`)
-      currentToken = response.authToken
-      loginError = null
-      return true
-    } else if (response.hasOwnProperty('error')) {
-      log.error(`Worker Download Audio ID ${threadId}: Validando login Error:  ${response.error}`)
-      currentToken = null
-      loginError = response.error
-      return false
-    }
-    else {
-      log.error(`Worker Download Audio ID ${threadId}: Validando login Error:  ${response.type} ${response.errno}`)
-      currentToken = null
-      loginError = response.type + ' ' + response.errno
-      return false
-    }
-  }
 
 async function processCall(callData) {
     const { downloadAudio } = require('./recorderEvents.js')
@@ -170,6 +144,7 @@ async function processCall(callData) {
         //Igual que en internal error, pero sin crear el nuevo worker.
         //Main se encarga de enviar la senal de cierre del proceso y logout
         else if (download.error == 'RB_RS_RECORDER_NOT_LICENSED') {
+            log.error(`Worker Download Audio ID ${threadId}: ${download.error}`)
             log.error(`Worker Download Audio ID ${threadId}: Grabadora no licenciada. Eliminando worker`)
             parentPort.postMessage({type: 'update', callID: callID, callData: {idEstado: 2} })
             await sleep(500)
@@ -248,8 +223,35 @@ async function postDownloadTasks(callID, callData) {
     log.info(`PostDownloadTasks: CallID ${callID} - Solicitando actualizacion en BD.`)
 }
 
+async function login () {
+    log.info(`Worker Download Audio ID ${threadId}: Solicitud login a ${IP}`)
+    const res = await loginRecorder(IP, username, password)
+    return res
+    
+}
+
+async function checkLogin (response) {
+    if (response.hasOwnProperty('authToken')) {
+      log.info(`Worker Download Audio ID ${threadId}: Login OK`)
+      currentToken = response.authToken
+      loginError = null
+      return true
+    } else if (response.hasOwnProperty('error')) {
+      log.error(`Worker Download Audio ID ${threadId}: Validando login Error:  ${response.error}`)
+      currentToken = null
+      loginError = response.error
+      return false
+    }
+    else {
+      log.error(`Worker Download Audio ID ${threadId}: Validando login Error:  ${response.type} ${response.errno}`)
+      currentToken = null
+      loginError = response.type + ' ' + response.errno
+      return false
+    }
+  }
+
 async function logout () {
-    log.info(`Worker Download Audio ID ${threadId} : Loging out ${IP}`)
+    log.info(`Worker Download Audio ID ${threadId}: Loging out ${IP}`)
     const res = await logoutRecorder(IP, currentToken)
     currentToken = null
   }
@@ -258,11 +260,12 @@ async function keepSession() {
 
     while(true) {
         await sleep(290000)
-        log.info(`Worker Login: Enviando keep alive`)
+        log.info(`Worker Download Audio ID ${threadId}: Enviando keep alive`)
         const res = await keepAlive(IP, currentToken)
+        log.info(res)
 
         if(res.hasOwnProperty('error')) {
-            log.error(`Worker Login: Error ${res.error}`)
+            log.error(`Worker Download Audio ID ${threadId}: ${res.error}`)
             logout()
             const r = await login()
             await checkLogin(r)
