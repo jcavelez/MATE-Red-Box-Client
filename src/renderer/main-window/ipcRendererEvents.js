@@ -186,6 +186,13 @@ function openExportPreferences() {
     on() //overlay
 }
 
+function openLicenseInfo() {
+    window.api.send('openLicenseInfo')
+    const dialog = document.getElementById('menu-dialog')
+    dialog.close()
+    on() //overlay
+}
+
 function stopDownloadProccess() {
     window.api.send('stop')
 }
@@ -203,7 +210,6 @@ function notify (message) {
 window.api.receive('recievePath', (data) => {
     document.getElementById('download-section-input').value = data
 })
-
 
 window.api.receive('recorderSearching', () => {
     console.log('Buscando')
@@ -313,12 +319,13 @@ window.api.receive('searchUpdate', (data) => {
     m2.innerHTML = `Descargas: ${data.successes} - Total: ${data.total} `
 })
 
+//cierro overlay
 window.api.receive('userOptionsWindowClosed', off)
 window.api.receive('exportsWindowClosed', off)
+window.api.receive('licenseInfoWindowClosed', off)
 
 
-
-
+//....................utils............................
 
 
 const zeroFill = (number, width ) => {
@@ -331,5 +338,5 @@ const zeroFill = (number, width ) => {
 }
 
 
-export { openDir, loadLastSearch, loadCurrentLogin, requestStartDownload, stopDownloadProccess, openUserOptions, openExportPreferences, openStatusDialog } 
+export { openDir, loadLastSearch, loadCurrentLogin, requestStartDownload, stopDownloadProccess, openUserOptions, openExportPreferences, openLicenseInfo, openStatusDialog } 
 

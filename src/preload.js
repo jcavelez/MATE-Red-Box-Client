@@ -2,22 +2,11 @@ const { app, contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld(
     'api', {
-        send: (channel, data) => {
-            // whitelist channels
-            let validChannels = ['toMain', 'login', 'openMainWindow',  'updatePreferences', 'openDir', 'startDownload', 'stop', 'openUserOptions', 'openExportOptions', 'setDebuggingLevel', 'modalStatus'];
-            if (validChannels.includes(channel)) {
-                ipcRenderer.send(channel, data);
-            }
-        },
-
-        receive: (channel, func) => {
-            let validChannels = ['fromMain', 'recievePath', 'loginAlert', 'searchError', 'newToken', 'searchUpdate' , 'recorderSearching', 'recorderDownloading',  'recorderLoginError', 'finishing' ,'queryFinished', 'queryInterrupted', 'getPreferences', 'downloadResponse', 'recorderNotLicensed', 'userOptionsWindowClosed','exportsWindowClosed'];
-            if (validChannels.includes(channel)) {
-                // Deliberately strip event as it includes `sender` 
-                ipcRenderer.on(channel, (event, ...args) => func(...args))
-            }
-        },
-
+        //send: communication from render to main
+        send: (channel, data) => ipcRenderer.send(channel, data),
+        //recieve: communication from main to render
+        receive: (channel, func) => ipcRenderer.on(channel, (event, ...args) => func(...args)),
+        //invoke: async two ways communication between render and main. IPC Main uses handle function
         invoke: async (channel, data) => ipcRenderer.invoke(channel, data),
     }
 )

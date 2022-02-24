@@ -1,10 +1,10 @@
 {
   "name": "mate-red-box-client",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "productName": "MATERedBoxClient",
   "description": "Massive Downloader Client for Red Box Recorders",
   "author": "Compucom",
-  "license": "UNLICENSED",
+  "license": "EULA",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",

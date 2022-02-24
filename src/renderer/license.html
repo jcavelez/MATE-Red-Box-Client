@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="xel-theme" content="../../node_modules/xel/themes/cupertino.css">
+    <meta name="xel-accent-color" content="rgba(13, 71, 159, 1)">
+    <meta name="xel-size" content="small">
+    <meta name="xel-iconset" content="../../node_modules/xel/iconsets/material-outlined.svg">
+    <link href="../../node_modules/xel-fonts/fonts.css" rel="stylesheet"></link>
+    <link rel="stylesheet" href="../assets/styles/licensing.css">
+    <script src="../../node_modules/xel/xel.js" type="module"></script>
+    <title>Acuerdo de Licencia y Privacidad</title>
+</head>
+<body>
+    <header>
+        <x-label>Acuerdo de Licencia y Privacidad</x-label>
+        <img class="header-logo" src="../assets/img/logo_small.PNG" alt="" srcset="">
+    </header>
+    <main>
+        
+        <x-box class="container">
+            <x-label class="" >Al usar este software Ud. acepta el siguiente acuerdo de licencia y privacidad:</x-label>
+            <text-area id="contract" disabled></text-area>
+        </x-box>
+
+        <x-box class="container">
+            <x-label>Ingrese su identificador de licencia:</x-label>
+            <x-input type="text" id="license-code"></x-input>
+        </x-box>
+
+        <x-box class="container">
+            <x-label id="error"></x-label>
+        </x-box>
+        
+        <x-button id="btn-license">Acepto</x-button>
+
+
+    </main>
+    <script src="./license-window/frontend-license.js"></script>
+</body>
+</html>

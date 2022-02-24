@@ -1,4 +1,4 @@
-import { loadLastSearch, loadCurrentLogin, openDir, openUserOptions, openExportPreferences, openStatusDialog, stopDownloadProccess } from './ipcRendererEvents.js'
+import { loadLastSearch, loadCurrentLogin, openDir, openUserOptions, openExportPreferences, openLicenseInfo, openStatusDialog, stopDownloadProccess } from './ipcRendererEvents.js'
 import { validateDate } from '../../assets/lib/validateDate.js'
 
 
@@ -7,6 +7,7 @@ const downloadBtn = document.getElementById('download-button')
 const stopButton = document.getElementById('stop-btn')
 const userOptionsBtn = document.getElementById('user-options-btn')
 const exportSettingsBtn = document.getElementById('export-settings-btn')
+const licenseBtn = document.getElementById('license-info-btn')
 const exitBtn = document.getElementById('exit-button')
 
 const switchEndDate = document.getElementById("switch-end-date")
@@ -48,6 +49,7 @@ function addEvents() {
     openDirectoryBtn.addEventListener('click', openDir)
     userOptionsBtn.addEventListener('click', openUserOptions)
     exportSettingsBtn.addEventListener('click', openExportPreferences)
+    licenseBtn.addEventListener('click', openLicenseInfo)
     downloadBtn.addEventListener('click', openStatusDialog)
     exitBtn.addEventListener('click', exit)
     //Valida fecha al perder el foco

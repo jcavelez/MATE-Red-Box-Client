@@ -10,18 +10,24 @@ const log = require('electron-log')
 const { runLoginEvent, beginDownloadCycle, forceStopProcess, logout } = require('./download-cycle')
 const sleep = require('./sleep')
 const { setupErrors } = require('./handler-errors')
+const fs = require('fs')
+const os = require('os')
+const { validateProductKey } = require('./assets/lib/validateProductKey')
 
 console.log = log.log
 settings.configure({prettify: true})
 log.transports.file.level =  settings.hasSync('logLevel') ? settings.getSync('logLevel') : 'error'
 log.transports.file.maxSize = 5242880
 log.transports.file.resolvePath = () => 'C:\\MATE\\Mate.log'
+let licensingWindow = null
 let loginWindow = null
 let win = null
 let appTray = null
-const icon = path.join(__dirname, 'assets', 'img', 'icon_black.ico')
+const icon = path.join(__dirname, 'assets', 'icons', 'icon_black.ico')
 let appIcon = nativeImage.createFromPath(icon)
 const databaseName = 'MATE.db'
+const contractFilePath = path.join(__dirname, 'assets', 'EULA.txt')
+console.log(contractFilePath)
 
 let RETRY_TIME = 10000 // ms
 
@@ -33,7 +39,8 @@ const gotTheLock = app.requestSingleInstanceLock()
 
 if (!gotTheLock) {
   app.quit()
-} else {
+}
+else {
   app.on('second-instance', (event, commandLine, workingDirectory) => {
     if (win) {
       if (win.isMinimized()) win.restore()
@@ -43,12 +50,24 @@ if (!gotTheLock) {
   
   app.whenReady().then(() => {
     log.info('Main: App Ready')
-    log.info('Main: Solicitud crear BD')
-    createDatabase(databaseName) 
-    log.info('Main: Solicitud crear schema')   
-    createSchema()
-    log.info('Main: Cargando ventana de Login')
-    createLoginWindow()
+
+    //validacion licencia
+
+    if(isLicensed()) {
+      log.info('Main: Solicitud crear BD')
+      createDatabase(databaseName)
+
+      log.info('Main: Solicitud crear schema')   
+      createSchema()
+
+      log.info('Main: Cargando ventana de Login')
+      createLoginWindow()
+      
+    } 
+    else {
+      createLicensingWindow()
+    }
+    
     createDefaultSettings()
     
   })
@@ -60,6 +79,15 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 //***********Funciones**************************/
+
+function isLicensed() {
+  const licenseKey = settings.hasSync('LicenseID') ? settings.getSync('LicenseID').toString('base64') : ''
+  
+  const productId = fs.readFileSync(path.join(__dirname, 'assets', 'ProductID.txt')).toString()
+
+  return validateProductKey(licenseKey, productId)
+}
+
 function createLoginWindow () {
   loginWindow = new BrowserWindow({
     width: 420,
@@ -77,8 +105,6 @@ function createLoginWindow () {
     }
   })
 
-  //setupErrors(loginWindow)
-
   loginWindow.loadURL(path.join(__dirname, './renderer/login.html'))
 
   loginWindow.once('ready-to-show', async () => {
@@ -86,7 +112,33 @@ function createLoginWindow () {
   })
 }
 
+function createLicensingWindow () {
+  licensingWindow = new BrowserWindow({
+    width: 420,
+    height: 550,
+    title: 'MATE - Red Box Client | Licenciamiento',
+    center: true,
+    parent: win,
+    modal: false,
+    frame: true,
+    autoHideMenuBar: true,
+    icon: appIcon.resize({ width: 16 }),
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js')
+    }
+  })
 
+  //setupErrors(loginWindow)
+
+  licensingWindow.loadURL(path.join(__dirname, './renderer/license.html'))
+
+  licensingWindow.once('ready-to-show', async () => {
+    licensingWindow.show()
+  })
+}
+
+// this is the main windown
 function createWindow () {
   win = new BrowserWindow({
     width: 485,
@@ -161,7 +213,6 @@ async function warningClose(){
 }
 
 //COMIENZO EN LOGIN PROCESO PARA GUARDAR DATA EN BD
-//ESTA FUNCION PUEDE QUEDAR OBSOLETA. REVISAR SI SE PUEDE BORRAR
 function createDefaultSettings() {
   const checkNewSettings = (key, value) => {
     if (!settings.hasSync(key)) {
@@ -186,7 +237,7 @@ function createDefaultSettings() {
     checkNewSettings('extensionField', 'no')
     checkNewSettings('channelNameField', 'no')
     checkNewSettings('otherPartyField', 'no')
-    checkNewSettings('agentGroupField', 'no')
+    checkNewSettings('LicenseID', '')
 }
 
 
@@ -208,6 +259,18 @@ app.on('window-all-closed', async (event) => {
 
 app.on('will-quit', async () => {
   log.info('Main: Event will-quit emitted')
+})
+
+//...............App licensed ..............................
+ipcMain.on('openLogin', (event, data) => {
+  licensingWindow.hide()
+
+  log.info('Main: Cargando ventana login')
+  createLoginWindow()
+
+  loginWindow.show()
+  
+  licensingWindow.close()
 })
 
 // ............. Login Event ....................................
@@ -250,11 +313,12 @@ ipcMain.on('login', async (event, loginData) => {
 
 //...............Open Main Window Event .........................
 ipcMain.on('openMainWindow', () => {
-  log.info('Main: Cerrando ventana de Login')
   loginWindow.hide()
+
   log.info('Main: Cargando ventana principal')
   createWindow()
   win.show()
+
   loginWindow.close()
 })
 
@@ -343,7 +407,7 @@ ipcMain.on('openExportOptions', (event) => {
     height: 535,
     resizable: false,
     title: 'Preferencias',
-    //center: true,
+    center: true,
     frame: false,
     parent: win,
     hasShadow: true,
@@ -369,6 +433,40 @@ ipcMain.on('openExportOptions', (event) => {
   })
 })
 
+//............. Open License Window .....................
+
+ipcMain.on('openLicense', (event) => {
+  const licenseWindow = new BrowserWindow({
+    width: 430,
+    height: 535,
+    resizable: false,
+    title: 'Acuerdo de Licencia y Privacidad',
+    //center: true,
+    frame: false,
+    parent: win,
+    hasShadow: true,
+    darkTheme: true,
+    modal: true,
+    show: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js')
+    }
+  })
+
+  licenseWindow.loadURL(`${path.join(__dirname, './renderer/license.html')}`)
+
+  log.info('Main: Ventana Licencia creada')
+  
+  licenseWindow.once('ready-to-show', () => {
+    licenseWindow.show()
+    licenseWindow.focus()
+  })
+
+  licenseWindow.on('closed', () => {
+    event.sender.send('licenseWindowClosed')
+  })
+})
+
 //............. Load Export Options Event .....................
 ipcMain.handle('loadExportPreferences', () => {
   let exportPreferences = getSessionSettings(settings.getSync('username'))
@@ -377,8 +475,41 @@ ipcMain.handle('loadExportPreferences', () => {
   return exportPreferences
 })
 
-//............. Start Download Event ........................
+//.............Open License Info Window
+ipcMain.on('openLicenseInfo', (event) => {
+  const licenseInfoWindow = new BrowserWindow({
+    width: 430,
+    height: 535,
+    resizable: false,
+    title: 'Licencia',
+    center: true,
+    frame: false,
+    parent: win,
+    hasShadow: true,
+    darkTheme: true,
+    modal: true,
+    show: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js')
+    }
+  })
 
+  licenseInfoWindow.loadURL(`${path.join(__dirname, './renderer/license-info.html')}`)
+
+  log.info('Main: Ventana Información de licencia')
+  
+  licenseInfoWindow.once('ready-to-show', () => {
+    licenseInfoWindow.show()
+    licenseInfoWindow.focus()
+  })
+
+  licenseInfoWindow.on('closed', () => {
+    event.sender.send('licenseInfoWindowClosed')
+  })
+})
+
+
+//............. Start Download Event ........................
 
 ipcMain.on('startDownload', async (event, options) => {
   log.info('Main: Senal de inicio de busqueda recibida')
@@ -496,4 +627,32 @@ ipcMain.on('setDebuggingLevel', (event, data) => {
   log.transports.file.level = data.level.toLowerCase()
   settings.set('logLevel', data.level.toLowerCase())
   log.warn(`Main: Nuevo nivel de debugging "${data.level}""`)
+})
+
+
+// ...................... license code ...........................
+
+ipcMain.handle('getLicenseID', (event, data) => {
+  if (settings.hasSync('LicenseID')) {
+    return settings.getSync('LicenseID')
+  } 
+  else
+    return 'Copia no licenciada. Por favor informe a su proveedor'
+})
+
+
+// ...................... Contract and privacy ...................
+
+ipcMain.handle('getContractAgreement', (event, data) => {
+  const contract =  fs.existsSync(contractFilePath) ? fs.readFileSync(contractFilePath, 'utf8') : 'No se encontró un contrato válido. Por favor informe a su proveedor'
+
+  return contract 
+})
+
+// ...................... validar licencia ...................
+
+ipcMain.handle('validateCode', (event, data) => {
+  settings.setSync('LicenseID', data)
+  
+  return isLicensed()
 })
